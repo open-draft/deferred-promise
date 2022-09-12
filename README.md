@@ -7,7 +7,7 @@ The `DeferredPromise` class is a Promise-compatible abstraction that defers reso
 ## Getting started
 
 ```sh
-npm install deferred-promise
+npm install @open-draft/deferred-promise
 ```
 
 ## Documentation
@@ -26,7 +26,7 @@ npm install deferred-promise
 Creates a new instance of a deferred promise.
 
 ```js
-import { DeferredPromise } from 'deferred-promise'
+import { DeferredPromise } from '@open-draft/deferred-promise'
 
 const promise = new DeferredPromise()
 ```
