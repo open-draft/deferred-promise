@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "commonjs",
+    "esModuleInterop": true
+  },
+  "include": ["./src"],
+  "exclude": ["node_modules"]
+}
