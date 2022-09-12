@@ -4,6 +4,7 @@ it('can be listened to with ".then()"', (done) => {
   expect.assertions(1)
 
   const promise = new DeferredPromise<number>()
+
   promise.then((data) => {
     expect(data).toBe(123)
     done()
@@ -35,6 +36,7 @@ it('can be awaited', async () => {
 describe('resolve()', () => {
   it('can be resolved without data', () => {
     const promise = new DeferredPromise<void>()
+    expect(promise.state).toBe('pending')
     promise.resolve()
 
     expect(promise.state).toBe('resolved')
@@ -53,6 +55,7 @@ describe('resolve()', () => {
 
   it('throws when resolving an already resolved promise', () => {
     const promise = new DeferredPromise<number>()
+    expect(promise.state).toBe('pending')
     promise.resolve(123)
 
     expect(() => promise.resolve(456)).toThrow(
@@ -64,6 +67,7 @@ describe('resolve()', () => {
 
   it('throws when resolving an already rejected promise', () => {
     const promise = new DeferredPromise<number>().catch(() => {})
+    expect(promise.state).toBe('pending')
     promise.reject()
 
     expect(() => promise.resolve(123)).toThrow(
@@ -76,7 +80,8 @@ describe('resolve()', () => {
 
 describe('reject()', () => {
   it('can be rejected without any reason', () => {
-    const promise = new DeferredPromise<void>()
+    const promise = new DeferredPromise<void>().catch(() => {})
+    expect(promise.state).toBe('pending')
     promise.reject()
 
     expect(promise.state).toBe('rejected')
@@ -85,7 +90,7 @@ describe('reject()', () => {
   })
 
   it('can be rejected with a reason', () => {
-    const promise = new DeferredPromise()
+    const promise = new DeferredPromise().catch(() => {})
     expect(promise.state).toBe('pending')
 
     const rejectionReason = new Error('Something went wrong')

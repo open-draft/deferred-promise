@@ -16,19 +16,18 @@ export type RejectFunction<Result = void> = (reason?: unknown) => Result
  * const portReady = new DeferredPromise()
  * portReady.reject(new Error('Port is already in use'))
  */
-export class DeferredPromise<Data extends any> extends Promise<Data> {
+export class DeferredPromise<Data extends any> {
   public resolve: ResolveFunction<Data>
   public reject: RejectFunction
   public state: DeferredPromiseState
   public result?: Data
   public rejectionReason?: unknown
 
-  constructor() {
-    let _resolve: ResolveFunction<Data> = () => {}
-    let _reject: RejectFunction = () => {}
+  private promise: Promise<Data>
 
-    super((resolve, reject) => {
-      _resolve = (data) => {
+  constructor() {
+    this.promise = new Promise((resolve, reject) => {
+      this.resolve = (data) => {
         if (this.state !== 'pending') {
           throw new TypeError(
             `Cannot resolve a DeferredPromise: illegal state ("${this.state}")`
@@ -40,7 +39,7 @@ export class DeferredPromise<Data extends any> extends Promise<Data> {
         resolve(data)
       }
 
-      _reject = (reason) => {
+      this.reject = (reason) => {
         if (this.state !== 'pending') {
           throw new TypeError(
             `Cannot reject a DeferredPromise: illegal state ("${this.state}")`
@@ -53,19 +52,21 @@ export class DeferredPromise<Data extends any> extends Promise<Data> {
       }
     })
 
-    this.resolve = _resolve
-    this.reject = _reject
-
     this.state = 'pending'
     this.result = undefined
     this.rejectionReason = undefined
   }
 
+  public then(onresolved?: ResolveFunction<Data>, onrejected?: RejectFunction) {
+    this.promise.then(onresolved, onrejected)
+    return this
+  }
+
   public catch<RejectReason = never>(
     onrejected?: RejectFunction<RejectReason>
-  ): DeferredPromise<Data | RejectReason> {
-    super.catch(onrejected)
-    return this as any
+  ): this {
+    this.promise.catch<RejectReason>(onrejected)
+    return this
   }
 
   static get [Symbol.species]() {
