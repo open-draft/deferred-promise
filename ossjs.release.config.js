@@ -1,3 +1,3 @@
 module.exports = {
-  script: 'npm publish',
+  script: 'npm publish --access public',
 }
