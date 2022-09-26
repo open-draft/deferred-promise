@@ -1,8 +1,10 @@
 export type DeferredPromiseState = "pending" | "resolved" | "rejected";
 export type ResolveFunction<Data extends any, Result = void> = (
   data: Data
-) => Result;
-export type RejectFunction<Result = void> = (reason?: unknown) => Result;
+) => Result | PromiseLike<Result>;
+export type RejectFunction<Result = void> = (
+  reason?: unknown
+) => Result | PromiseLike<Result>;
 
 /**
  * Represents the completion of an asynchronous operation.
@@ -16,7 +18,7 @@ export type RejectFunction<Result = void> = (reason?: unknown) => Result;
  * const portReady = new DeferredPromise()
  * portReady.reject(new Error('Port is already in use'))
  */
-export class DeferredPromise<Data extends unknown = void> {
+export class DeferredPromise<Data extends any = void> {
   public resolve: ResolveFunction<Data>;
   public reject: RejectFunction;
   public state: DeferredPromiseState;
@@ -60,12 +62,15 @@ export class DeferredPromise<Data extends unknown = void> {
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    */
-  public then(
-    onresolved?: ResolveFunction<Data, any>,
-    onrejected?: RejectFunction
-  ) {
-    this.promise = this.promise.then(onresolved, onrejected);
-    return this;
+  public then<ResolveData = Data, RejectionReason = never>(
+    onresolved?: ResolveFunction<Data, ResolveData>,
+    onrejected?: RejectFunction<RejectionReason>
+  ): DeferredPromise<ResolveData | RejectionReason> {
+    this.promise = this.promise.then<ResolveData, RejectionReason>(
+      onresolved,
+      onrejected
+    );
+    return this as DeferredPromise<ResolveData | RejectionReason>;
   }
 
   /**
@@ -73,7 +78,7 @@ export class DeferredPromise<Data extends unknown = void> {
    */
   public catch<RejectReason = never>(
     onrejected?: RejectFunction<RejectReason>
-  ): this {
+  ): DeferredPromise<Data | RejectReason> {
     this.promise = this.promise.catch<RejectReason>(onrejected);
     return this;
   }
@@ -83,7 +88,7 @@ export class DeferredPromise<Data extends unknown = void> {
    * the Promise is settled (fulfilled or rejected). The resolved
    * value cannot be modified from the callback.
    */
-  public finally(onfinally?: () => void): this {
+  public finally(onfinally?: () => void): DeferredPromise<Data> {
     this.promise = this.promise.finally(onfinally);
     return this;
   }
