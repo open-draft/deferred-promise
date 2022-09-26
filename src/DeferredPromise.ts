@@ -1,8 +1,8 @@
-export type DeferredPromiseState = 'pending' | 'resolved' | 'rejected'
+export type DeferredPromiseState = "pending" | "resolved" | "rejected";
 export type ResolveFunction<Data extends any, Result = void> = (
   data: Data
-) => Result
-export type RejectFunction<Result = void> = (reason?: unknown) => Result
+) => Result;
+export type RejectFunction<Result = void> = (reason?: unknown) => Result;
 
 /**
  * Represents the completion of an asynchronous operation.
@@ -16,64 +16,83 @@ export type RejectFunction<Result = void> = (reason?: unknown) => Result
  * const portReady = new DeferredPromise()
  * portReady.reject(new Error('Port is already in use'))
  */
-export class DeferredPromise<Data extends any> {
-  public resolve: ResolveFunction<Data>
-  public reject: RejectFunction
-  public state: DeferredPromiseState
-  public result?: Data
-  public rejectionReason?: unknown
+export class DeferredPromise<Data extends unknown = void> {
+  public resolve: ResolveFunction<Data>;
+  public reject: RejectFunction;
+  public state: DeferredPromiseState;
+  public result?: Data;
+  public rejectionReason?: unknown;
 
-  private promise: Promise<Data>
+  private promise: Promise<unknown>;
 
   constructor() {
-    this.promise = new Promise((resolve, reject) => {
+    this.promise = new Promise<Data>((resolve, reject) => {
       this.resolve = (data) => {
-        if (this.state !== 'pending') {
+        if (this.state !== "pending") {
           throw new TypeError(
             `Cannot resolve a DeferredPromise: illegal state ("${this.state}")`
-          )
+          );
         }
 
-        this.state = 'resolved'
-        this.result = data
-        resolve(data)
-      }
+        this.state = "resolved";
+        this.result = data;
+        resolve(data);
+      };
 
       this.reject = (reason) => {
-        if (this.state !== 'pending') {
+        if (this.state !== "pending") {
           throw new TypeError(
             `Cannot reject a DeferredPromise: illegal state ("${this.state}")`
-          )
+          );
         }
 
-        this.state = 'rejected'
-        this.rejectionReason = reason
-        reject(reason)
-      }
-    })
+        this.state = "rejected";
+        this.rejectionReason = reason;
+        reject(reason);
+      };
+    });
 
-    this.state = 'pending'
-    this.result = undefined
-    this.rejectionReason = undefined
+    this.state = "pending";
+    this.result = undefined;
+    this.rejectionReason = undefined;
   }
 
-  public then(onresolved?: ResolveFunction<Data>, onrejected?: RejectFunction) {
-    this.promise.then(onresolved, onrejected)
-    return this
+  /**
+   * Attaches callbacks for the resolution and/or rejection of the Promise.
+   */
+  public then(
+    onresolved?: ResolveFunction<Data, any>,
+    onrejected?: RejectFunction
+  ) {
+    this.promise = this.promise.then(onresolved, onrejected);
+    return this;
   }
 
+  /**
+   * Attaches a callback for only the rejection of the Promise.
+   */
   public catch<RejectReason = never>(
     onrejected?: RejectFunction<RejectReason>
   ): this {
-    this.promise.catch<RejectReason>(onrejected)
-    return this
+    this.promise = this.promise.catch<RejectReason>(onrejected);
+    return this;
+  }
+
+  /**
+   * Attaches a callback that is invoked when
+   * the Promise is settled (fulfilled or rejected). The resolved
+   * value cannot be modified from the callback.
+   */
+  public finally(onfinally?: () => void): this {
+    this.promise = this.promise.finally(onfinally);
+    return this;
   }
 
   static get [Symbol.species]() {
-    return Promise
+    return Promise;
   }
 
   get [Symbol.toStringTag]() {
-    return 'DeferredPromise'
+    return "DeferredPromise";
   }
 }
