@@ -15,9 +15,9 @@ npm install @open-draft/deferred-promise
 - [**Class: `DeferredPromise`**](#class-deferredpromise)
   - [`new DeferredPromise()`](#new-defferedpromise)
   - [`deferredPromise.state`](#deferredpromisestate)
-  - [`deferredProimse.result`](#deferredpromiseresult)
+  - [`deferredPromise.result`](#deferredpromiseresult)
   - [`deferredPromise.resolve()`](#deferredpromiseresolve)
-  - [`deferredPromies.reject()`](#deferredpromisereject)
+  - [`deferredPromise.reject()`](#deferredpromisereject)
   - [`deferredPromise.finally()`](#deferredpromisefinally)
 
 ## Class: `DeferredPromise`
