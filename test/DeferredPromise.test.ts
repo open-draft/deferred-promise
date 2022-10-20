@@ -1,6 +1,14 @@
 import { DeferredPromise } from "../src";
 import { IllegalStateError } from "../src/IllegalStateError";
 
+function extractError<ErrorType extends Error>(fn: () => void): ErrorType {
+  try {
+    fn();
+  } catch (error) {
+    return error as ErrorType;
+  }
+}
+
 describe("Promise-compliance", () => {
   it('can be listened to with ".then()"', (done) => {
     expect.assertions(1);
@@ -100,30 +108,46 @@ describe("resolve()", () => {
     expect(promise.result).toBe(123);
   });
 
-  it("throws when resolving an already resolved promise", () => {
+  it("throws when resolving an already resolved promise", async () => {
     const promise = new DeferredPromise<number>();
     expect(promise.state).toBe("pending");
-    promise.resolve(123);
 
-    expect(() => promise.resolve(456)).toThrow(
-      new IllegalStateError(
-        "Cannot resolve a DeferredPromise: illegal state",
-        "resolved"
-      )
+    promise.resolve(123);
+    expect(promise.state).toBe("resolved");
+
+    const stateError = extractError<IllegalStateError>(() => {
+      promise.resolve(456);
+    });
+
+    // Throws an illegal state error.
+    expect(stateError).toBeInstanceOf(IllegalStateError);
+    expect(stateError.message).toBe(
+      "Cannot resolve a DeferredPromise: illegal state"
     );
+    expect(stateError.state).toBe("resolved");
+
+    // The state remains resolved.
+    expect(promise.state).toBe("resolved");
   });
 
   it("throws when resolving an already rejected promise", () => {
     const promise = new DeferredPromise<number>().catch(() => {});
     expect(promise.state).toBe("pending");
-    promise.reject();
+    promise.reject("first reason");
 
-    expect(() => promise.resolve(123)).toThrow(
-      new IllegalStateError(
-        "Cannot resolve a DeferredPromise: illegal state",
-        "rejected"
-      )
+    const stateError = extractError<IllegalStateError>(() => {
+      promise.reject("second reason");
+    });
+
+    expect(stateError).toBeInstanceOf(IllegalStateError);
+    expect(stateError.message).toBe(
+      "Cannot reject a DeferredPromise: illegal state"
     );
+    expect(stateError.state).toBe("rejected");
+
+    // The state remains rejected.
+    expect(promise.state).toBe("rejected");
+    expect(promise.rejectionReason).toBe("first reason");
   });
 });
 
