@@ -1,13 +1,4 @@
 import { DeferredPromise } from "../src";
-import { IllegalStateError } from "../src/IllegalStateError";
-
-function extractError<ErrorType extends Error>(fn: () => void): ErrorType {
-  try {
-    fn();
-  } catch (error) {
-    return error as ErrorType;
-  }
-}
 
 describe("Promise-compliance", () => {
   it('can be listened to with ".then()"', (done) => {
@@ -108,26 +99,18 @@ describe("resolve()", () => {
     expect(promise.result).toBe(123);
   });
 
-  it("throws when resolving an already resolved promise", async () => {
+  it("does nothing when resolving an already resolved promise", async () => {
     const promise = new DeferredPromise<number>();
     expect(promise.state).toBe("pending");
 
     promise.resolve(123);
     expect(promise.state).toBe("resolved");
+    expect(promise.result).toBe(123);
 
-    const stateError = extractError<IllegalStateError>(() => {
-      promise.resolve(456);
-    });
-
-    // Throws an illegal state error.
-    expect(stateError).toBeInstanceOf(IllegalStateError);
-    expect(stateError.message).toBe(
-      "Cannot resolve a DeferredPromise: illegal state"
-    );
-    expect(stateError.state).toBe("resolved");
-
-    // The state remains resolved.
+    // Resolving an already resolved Promise does nothing.
+    promise.resolve(456);
     expect(promise.state).toBe("resolved");
+    expect(promise.result).toBe(123);
   });
 
   it("throws when resolving an already rejected promise", () => {
@@ -135,17 +118,10 @@ describe("resolve()", () => {
     expect(promise.state).toBe("pending");
     promise.reject("first reason");
 
-    const stateError = extractError<IllegalStateError>(() => {
-      promise.reject("second reason");
-    });
+    expect(promise.state).toBe("rejected");
+    expect(promise.rejectionReason).toBe("first reason");
 
-    expect(stateError).toBeInstanceOf(IllegalStateError);
-    expect(stateError.message).toBe(
-      "Cannot reject a DeferredPromise: illegal state"
-    );
-    expect(stateError.state).toBe("rejected");
-
-    // The state remains rejected.
+    promise.reject("second reason");
     expect(promise.state).toBe("rejected");
     expect(promise.rejectionReason).toBe("first reason");
   });

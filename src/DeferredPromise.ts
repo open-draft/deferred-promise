@@ -1,5 +1,3 @@
-import { IllegalStateError } from "./IllegalStateError";
-
 export type DeferredPromiseState = "pending" | "resolved" | "rejected";
 
 export type ResolveFunction<Data extends any, Result = void> = (
@@ -35,10 +33,7 @@ export class DeferredPromise<Data extends any = void> {
     this.promise = new Promise<Data>((resolve, reject) => {
       this.resolve = (data) => {
         if (this.state !== "pending") {
-          throw new IllegalStateError(
-            "Cannot resolve a DeferredPromise: illegal state",
-            this.state
-          );
+          return;
         }
 
         this.state = "resolved";
@@ -48,10 +43,7 @@ export class DeferredPromise<Data extends any = void> {
 
       this.reject = (reason) => {
         if (this.state !== "pending") {
-          throw new IllegalStateError(
-            "Cannot reject a DeferredPromise: illegal state",
-            this.state
-          );
+          return;
         }
 
         this.state = "rejected";
