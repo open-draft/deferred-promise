@@ -1,1 +1,2 @@
-export * from './DeferredPromise'
+export * from "./DeferredPromise";
+export * from "./IllegalStateError";
