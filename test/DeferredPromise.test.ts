@@ -1,4 +1,5 @@
 import { DeferredPromise } from "../src";
+import { IllegalStateError } from "../src/IllegalStateError";
 
 describe("Promise-compliance", () => {
   it('can be listened to with ".then()"', (done) => {
@@ -105,8 +106,9 @@ describe("resolve()", () => {
     promise.resolve(123);
 
     expect(() => promise.resolve(456)).toThrow(
-      new TypeError(
-        'Cannot resolve a DeferredPromise: illegal state ("resolved")'
+      new IllegalStateError(
+        "Cannot resolve a DeferredPromise: illegal state",
+        "resolved"
       )
     );
   });
@@ -117,8 +119,9 @@ describe("resolve()", () => {
     promise.reject();
 
     expect(() => promise.resolve(123)).toThrow(
-      new TypeError(
-        'Cannot resolve a DeferredPromise: illegal state ("rejected")'
+      new IllegalStateError(
+        "Cannot resolve a DeferredPromise: illegal state",
+        "rejected"
       )
     );
   });
