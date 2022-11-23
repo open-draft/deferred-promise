@@ -1,47 +1,51 @@
-import { DeferredPromise } from '../src'
+import { createDeferredExecutor } from '../src/createDeferredExecutor'
 
-it('can be resolved without data', () => {
-  const promise = new DeferredPromise<void>()
-  expect(promise.state).toBe('pending')
-  promise.resolve()
+it('can be resolved without data', async () => {
+  const executor = createDeferredExecutor<void>()
+  const promise = new Promise<void>(executor)
+  expect(executor.state).toBe('pending')
+  executor.resolve()
 
-  expect(promise.state).toBe('resolved')
-  expect(promise.result).toBeUndefined()
+  expect(executor.state).toBe('fulfilled')
+  expect(await promise).toBeUndefined()
 })
 
-it('can be resolved with data', () => {
-  const promise = new DeferredPromise<number>()
-  expect(promise.state).toBe('pending')
+it('can be resolved with data', async () => {
+  const executor = createDeferredExecutor<number>()
+  const promise = new Promise(executor)
+  expect(executor.state).toBe('pending')
 
-  promise.resolve(123)
+  executor.resolve(123)
 
-  expect(promise.state).toBe('resolved')
-  expect(promise.result).toBe(123)
+  expect(executor.state).toBe('fulfilled')
+  expect(await promise).toBe(123)
 })
 
 it('does nothing when resolving an already resolved promise', async () => {
-  const promise = new DeferredPromise<number>()
-  expect(promise.state).toBe('pending')
+  const executor = createDeferredExecutor<number>()
+  const promise = new Promise(executor)
+  expect(executor.state).toBe('pending')
 
-  promise.resolve(123)
-  expect(promise.state).toBe('resolved')
-  expect(promise.result).toBe(123)
+  executor.resolve(123)
+  expect(executor.state).toBe('fulfilled')
+  expect(await promise).toBe(123)
 
   // Resolving an already resolved Promise does nothing.
-  promise.resolve(456)
-  expect(promise.state).toBe('resolved')
-  expect(promise.result).toBe(123)
+  executor.resolve(456)
+  expect(executor.state).toBe('fulfilled')
+  expect(await promise).toBe(123)
 })
 
 it('throws when resolving an already rejected promise', () => {
-  const promise = new DeferredPromise<number>().catch(() => {})
-  expect(promise.state).toBe('pending')
-  promise.reject('first reason')
+  const executor = createDeferredExecutor<number>()
+  new Promise(executor).catch(() => {})
+  expect(executor.state).toBe('pending')
+  executor.reject('first reason')
 
-  expect(promise.state).toBe('rejected')
-  expect(promise.rejectionReason).toBe('first reason')
+  expect(executor.state).toBe('rejected')
+  expect(executor.rejectionReason).toBe('first reason')
 
-  promise.reject('second reason')
-  expect(promise.state).toBe('rejected')
-  expect(promise.rejectionReason).toBe('first reason')
+  executor.reject('second reason')
+  expect(executor.state).toBe('rejected')
+  expect(executor.rejectionReason).toBe('first reason')
 })
