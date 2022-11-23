@@ -1,4 +1,4 @@
-import { DeferredPromise } from '../../src/_DeferredPromise'
+import { DeferredPromise } from '../../src/DeferredPromise'
 
 it('can be resolved without data', async () => {
   const promise = new DeferredPromise<void>()

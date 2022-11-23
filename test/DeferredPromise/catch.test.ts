@@ -1,4 +1,4 @@
-import { DeferredPromise } from '../../src/_DeferredPromise'
+import { DeferredPromise } from '../../src/DeferredPromise'
 
 it('can be listened to with "catch"', async () => {
   const catchCallback = jest.fn()

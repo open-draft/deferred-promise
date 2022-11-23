@@ -1,4 +1,4 @@
-import { DeferredPromise } from '../../src/_DeferredPromise'
+import { DeferredPromise } from '../../src/DeferredPromise'
 
 it('executes the "finally" block when the promise resolves', async () => {
   const promise = new DeferredPromise()

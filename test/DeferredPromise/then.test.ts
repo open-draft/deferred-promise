@@ -1,4 +1,4 @@
-import { DeferredPromise } from '../../src/_DeferredPromise'
+import { DeferredPromise } from '../../src/DeferredPromise'
 
 it('respects promise identity with chain transforms', async () => {
   const p1 = new DeferredPromise<number>()
