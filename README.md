@@ -12,17 +12,19 @@ npm install @open-draft/deferred-promise
 
 ## Documentation
 
-- [**Class: `DeferredPromise`**](#class-deferredpromise)
+- [`createDeferredExecutor()`](#createdeferredexecutor)
+- [Class: `DeferredPromise`](#class-deferredpromise)
   - [`new DeferredPromise()`](#new-defferedpromise)
   - [`deferredPromise.state`](#deferredpromisestate)
-  - [`deferredPromise.result`](#deferredpromiseresult)
   - [`deferredPromise.resolve()`](#deferredpromiseresolve)
   - [`deferredPromise.reject()`](#deferredpromisereject)
-  - [`deferredPromise.finally()`](#deferredpromisefinally)
+  - [`deferredPromise.rejectionReason`](#deferredpromiserejectionreason)
 
-## API
+---
 
-### `createDeferredExecutor()`
+## `createDeferredExecutor()`
+
+Creates a Promise executor function that delegates its resolution to the current scope.
 
 ```js
 import { createDeferredExecutor } from '@open-draft/deferred-promise'
@@ -31,6 +33,20 @@ const executor = createDeferredExecutor()
 const promise = new Promise(executor)
 
 executor.resolve('hello')
+// executor.reject(new Error('Reason'))
+```
+
+Deferred executor allows you to control any promise remotely and doesn't affect the Promise instance in any way. Similar to the [`DeferredPromise`](#class-deferredpromise) instance, the deferred executor exposes additional promise properties like `state`, `rejectionReason`, `resolve`, and `reject`. In fact, the `DeferredPromise` class is implemented on top of the deferred executor.
+
+```js
+const executor = createDeferredExecutor()
+const promise = new Promise(executor)
+
+executor.reject('reason')
+
+nextTick(() => {
+  console.log(executor.rejectionReason) // "reason"
+})
 ```
 
 ---
@@ -47,42 +63,57 @@ import { DeferredPromise } from '@open-draft/deferred-promise'
 const promise = new DeferredPromise()
 ```
 
-Unlike the regular `Promise`, a deferred promise does not accept the callback function. Instead, you should use [`.resolve()`](#deferredpromiseresolve) and [`.reject()`](#deferredpromisereject) to resolve and reject the promise respectively.
+A deferred promise is a Promise-compatible class that constructs a regular Promise instance under the hood, controlling it via the [deferred executor](#createdeferredexecutor).
 
-A deferred promise is fully compatible with the native `Promise`, which means you can pass it to the consumers that await a regular `Promise` as well.
+A deferred promise is fully compatible with the regular Promise, both type- and runtime-wise, e.g. a deferred promise can be chained and awaited normally.
+
+```js
+const promise = new DefferredPromise()
+  .then((value) => value.toUpperCase())
+  .then((value) => value.substring(0, 2))
+  .catch((error) => console.error(error))
+
+await promise
+```
+
+Unlike the regular Promise, however, a deferred promise doesn't accept the `executor` function as the constructor argument. Instead, the resolution of the deferred promise is deferred to the current scope (thus the name).
+
+```js
+function getPort() {
+  // Notice that you don't provide any executor function
+  // when constructing a deferred promise.
+  const portPromise = new DeferredPromise()
+
+  port.on('open', (port) => {
+    // Resolve the deferred promise whenever necessary.
+    portPromise.resolve(port)
+  })
+
+  // Return the deferred promise immediately.
+  return portPromise
+}
+```
+
+Use the [`resolve()`](#deferredpromiseresolve) and [`reject()`](#deferredpromisereject) methods of the deferred promise instance to resolve and reject that promise respectively.
 
 ### `deferredPromise.state`
 
-- `<"pending" | "resolved" | "rejected">` **Default:** `"pending"`
+- `<"pending" | "fulfilled" | "rejected">` **Default:** `"pending"`
 
 ```js
 const promise = new DeferredPromise()
+
+console.log(promise.state) // "pending"
+promise.resolve()
+
+// The promise state is still "pending"
+// because promises are settled in the next microtask.
 console.log(promise.state) // "pending"
 
-promise.resolve()
-console.log(promise.state) // "resolved"
-```
-
-### `deferredPromise.result`
-
-Returns the value that has resolved the promise. If no value has been provided to the `.resolve()` call, `undefined` is returned instead.
-
-```js
-const promise = new DeferredPromise()
-promise.resolve('John')
-
-console.log(promise.result) // "John"
-```
-
-### `deferredPromise.rejectionReason`
-
-Returns the reason that has rejected the promise. If no reason has been provided to the `.reject()` call, `undefined` is returned instead.
-
-```js
-const promise = new DeferredPromise()
-promise.reject(new Error('Internal Server Error'))
-
-console.log(promise.rejectionReason) // Error
+nextTick(() => {
+  // In the next microtask, the promise's state is resolved.
+  console.log(promise.state) // "fulfilled"
+})
 ```
 
 ### `deferredPromise.resolve()`
@@ -129,15 +160,15 @@ function createBroadcast() {
 }
 ```
 
-### `deferredPromise.finally()`
+You can access the rejection reason of the deferred promise at any time by the [`rejectionReason`](#deferredpromiserejectionreason) property of that promise instance.
 
-Attaches a callback that executes when the deferred promise is settled (resolved or rejected).
+### `deferredPromise.rejectionReason`
+
+Returns the reason of the promise rejection. If no reason has been provided to the `.reject()` call, `undefined` is returned instead.
 
 ```js
-const channelReady = new DeferredPromise()
+const promise = new DeferredPromise()
+promise.reject(new Error('Internal Server Error'))
 
-channelReady.finally(async () => {
-  // Perform a cleanup side-effect once we're done.
-  await channel.close()
-})
+console.log(promise.rejectionReason) // Error
 ```
