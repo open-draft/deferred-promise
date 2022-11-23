@@ -1,1 +1,2 @@
-export * from "./DeferredPromise";
+export * from './createDeferredExecutor'
+export * from './DeferredPromise'

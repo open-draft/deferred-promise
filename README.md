@@ -20,6 +20,21 @@ npm install @open-draft/deferred-promise
   - [`deferredPromise.reject()`](#deferredpromisereject)
   - [`deferredPromise.finally()`](#deferredpromisefinally)
 
+## API
+
+### `createDeferredExecutor()`
+
+```js
+import { createDeferredExecutor } from '@open-draft/deferred-promise'
+
+const executor = createDeferredExecutor()
+const promise = new Promise(executor)
+
+executor.resolve('hello')
+```
+
+---
+
 ## Class: `DeferredPromise`
 
 ### `new DefferedPromise()`
@@ -27,9 +42,9 @@ npm install @open-draft/deferred-promise
 Creates a new instance of a deferred promise.
 
 ```js
-import { DeferredPromise } from "@open-draft/deferred-promise";
+import { DeferredPromise } from '@open-draft/deferred-promise'
 
-const promise = new DeferredPromise();
+const promise = new DeferredPromise()
 ```
 
 Unlike the regular `Promise`, a deferred promise does not accept the callback function. Instead, you should use [`.resolve()`](#deferredpromiseresolve) and [`.reject()`](#deferredpromisereject) to resolve and reject the promise respectively.
@@ -41,11 +56,11 @@ A deferred promise is fully compatible with the native `Promise`, which means yo
 - `<"pending" | "resolved" | "rejected">` **Default:** `"pending"`
 
 ```js
-const promise = new DeferredPromise();
-console.log(promise.state); // "pending"
+const promise = new DeferredPromise()
+console.log(promise.state) // "pending"
 
-promise.resolve();
-console.log(promise.state); // "resolved"
+promise.resolve()
+console.log(promise.state) // "resolved"
 ```
 
 ### `deferredPromise.result`
@@ -53,10 +68,10 @@ console.log(promise.state); // "resolved"
 Returns the value that has resolved the promise. If no value has been provided to the `.resolve()` call, `undefined` is returned instead.
 
 ```js
-const promise = new DeferredPromise();
-promise.resolve("John");
+const promise = new DeferredPromise()
+promise.resolve('John')
 
-console.log(promise.result); // "John"
+console.log(promise.result) // "John"
 ```
 
 ### `deferredPromise.rejectionReason`
@@ -64,10 +79,10 @@ console.log(promise.result); // "John"
 Returns the reason that has rejected the promise. If no reason has been provided to the `.reject()` call, `undefined` is returned instead.
 
 ```js
-const promise = new DeferredPromise();
-promise.reject(new Error("Internal Server Error"));
+const promise = new DeferredPromise()
+promise.reject(new Error('Internal Server Error'))
 
-console.log(promise.rejectionReason); // Error
+console.log(promise.rejectionReason) // Error
 ```
 
 ### `deferredPromise.resolve()`
@@ -76,21 +91,21 @@ Resolves the deferred promise with a given value.
 
 ```js
 function startServer() {
-  const serverReady = new DeferredPromise();
+  const serverReady = new DeferredPromise()
 
   new http.Server().listen(() => {
     // Resolve the deferred promise with the server address
     // once the server is ready.
-    serverReady.resolve("http://localhost:8080");
-  });
+    serverReady.resolve('http://localhost:8080')
+  })
 
   // Return the deferred promise to the consumer.
-  return serverReady;
+  return serverReady
 }
 
 startServer().then((address) => {
-  console.log('Server is running at "%s"', address);
-});
+  console.log('Server is running at "%s"', address)
+})
 ```
 
 ### `deferredPromise.reject()`
@@ -99,18 +114,18 @@ Rejects the deferred promise with a given reason.
 
 ```js
 function createBroadcast() {
-  const runtimePromise = new DeferredPromise();
+  const runtimePromise = new DeferredPromise()
 
-  receiver.on("error", (error) => {
+  receiver.on('error', (error) => {
     // Reject the deferred promise in response
     // to the incoming "error" event.
-    runtimePromise.reject(error);
-  });
+    runtimePromise.reject(error)
+  })
 
   // This deferred promise will be pending forever
   // unless the broadcast channel receives the
   // "error" event that rejects it.
-  return runtimePromise;
+  return runtimePromise
 }
 ```
 
@@ -119,10 +134,10 @@ function createBroadcast() {
 Attaches a callback that executes when the deferred promise is settled (resolved or rejected).
 
 ```js
-const channelReady = new DeferredPromise();
+const channelReady = new DeferredPromise()
 
 channelReady.finally(async () => {
   // Perform a cleanup side-effect once we're done.
-  await channel.close();
-});
+  await channel.close()
+})
 ```
