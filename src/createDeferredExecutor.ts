@@ -8,17 +8,23 @@ export type RejectFunction<Result = unknown> = (
   reason?: unknown
 ) => Result | PromiseLike<Result>
 
-export type DeferredPromiseExecutor<T> = {
-  (ok?: ResolveFunction<T>, bad?: RejectFunction): void
-  resolve: ResolveFunction<T>
+export type DeferredPromiseExecutor<Input = void, Output = Input> = {
+  (resolve?: ResolveFunction<any, unknown>, reject?: RejectFunction): void
+
+  resolve: ResolveFunction<Input, Output | void>
   reject: RejectFunction
-  result?: T
+  result?: Output | Input
   state: PromiseState
   rejectionReason?: unknown
 }
-
-export function createDeferredExecutor<T>(): DeferredPromiseExecutor<T> {
-  const executor = <DeferredPromiseExecutor<T>>((resolve, reject) => {
+export function createDeferredExecutor<
+  Input = void,
+  Output = Input
+>(): DeferredPromiseExecutor<Input, Output> {
+  const executor = <DeferredPromiseExecutor<Input, Output>>((
+    resolve,
+    reject
+  ) => {
     executor.state = 'pending'
 
     executor.resolve = (data) => {

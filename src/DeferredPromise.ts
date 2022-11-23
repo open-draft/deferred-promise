@@ -15,16 +15,16 @@ import {
  *   returtn portReadyPromise
  * }
  */
-export class DeferredPromise<Data = void> {
-  #promise: Promise<Data>
-  #executor: DeferredPromiseExecutor<Data>
+export class DeferredPromise<Input = void, Output = Input> {
+  #promise: Promise<Output>
+  #executor: DeferredPromiseExecutor<Input, Output>
 
-  public resolve: ResolveFunction<Data>
-  public reject: RejectFunction
+  public resolve: (value: Input) => void
+  public reject: (reason?: unknown) => void
 
   constructor() {
-    this.#executor = createDeferredExecutor<Data>()
-    this.#promise = new Promise<Data>(this.#executor)
+    this.#executor = createDeferredExecutor<Input, Output>()
+    this.#promise = new Promise<Output>(this.#executor)
 
     this.resolve = this.#executor.resolve
     this.reject = this.#executor.reject
@@ -46,11 +46,12 @@ export class DeferredPromise<Data = void> {
     return this.#executor.rejectionReason
   }
 
-  public then<FulfillmentResult = Data, RejectionResult = never>(
-    onFulfilled?: ResolveFunction<Data, FulfillmentResult> | null,
+  public then<FulfillmentResult = Output, RejectionResult = never>(
+    onFulfilled?: ResolveFunction<Output, FulfillmentResult> | null,
     onRejected?: RejectFunction<RejectionResult> | null
-  ): DeferredPromise<FulfillmentResult | RejectionResult> {
+  ): DeferredPromise<Input, FulfillmentResult | RejectionResult> {
     const derivedPromise = new DeferredPromise<
+      Input,
       FulfillmentResult | RejectionResult
     >()
 
@@ -120,9 +121,7 @@ export class DeferredPromise<Data = void> {
          * order of resolving the value must be left-to-right:
          * Initial -> A -> B
          */
-        derivedPromise.resolve = this.resolve as ResolveFunction<
-          FulfillmentResult | RejectionResult
-        >
+        derivedPromise.resolve = this.resolve
         derivedPromise.reject = this.reject
 
         this.#promise.then(resolveDerivedPromise, rejectDerivedPromise)
@@ -146,7 +145,7 @@ export class DeferredPromise<Data = void> {
 
   public catch<Result>(
     onRejected?: RejectFunction<Result>
-  ): DeferredPromise<Data | Result> {
+  ): DeferredPromise<Input, Output | Result> {
     return this.then(undefined, onRejected)
   }
 
