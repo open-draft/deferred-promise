@@ -59,7 +59,7 @@ export class DeferredPromise<Input = never, Output = Input> {
       if (typeof onFulfilled === 'function') {
         try {
           const nextResult = onFulfilled(result)
-          derivedPromise.#executor.resolve(nextResult as any)
+          derivedPromise.#executor.resolve(nextResult as Input)
         } catch (error) {
           rejectDerivedPromise(error)
         }
@@ -85,7 +85,7 @@ export class DeferredPromise<Input = never, Output = Input> {
            * The "catch" callback is there precisely to prevent
            * uncaught promise rejection errors.
            */
-          derivedPromise.#executor.resolve(nextReason as any)
+          derivedPromise.#executor.resolve(nextReason as Input)
 
           /**
            * @note Since the handled rejected promise was resolved internally,
