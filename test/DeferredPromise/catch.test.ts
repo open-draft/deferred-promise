@@ -66,3 +66,27 @@ it('supports complex then/catch chains', async () => {
 
   expect(await promise).toEqual(['10', 'APPLES'])
 })
+
+it('supports a Promise returned from "catch"', async () => {
+  const promise = new DeferredPromise().catch((x) => {
+    return new Promise<string>((resolve) => {
+      resolve(x.toString())
+    })
+  })
+
+  promise.reject(123)
+
+  expect(await promise).toBe('123')
+})
+
+it('supports a DeferredPromise returned from "catch"', async () => {
+  const promise = new DeferredPromise().catch((x) => {
+    const deferred = new DeferredPromise<string>()
+    deferred.resolve(x.toString())
+    return deferred
+  })
+
+  promise.reject(123)
+
+  expect(await promise).toBe('123')
+})
