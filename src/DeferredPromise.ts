@@ -15,7 +15,7 @@ import {
  *   returtn portReadyPromise
  * }
  */
-export class DeferredPromise<Input = void, Output = Input> {
+export class DeferredPromise<Input = never, Output = Input> {
   #promise: Promise<Output>
   #executor: DeferredPromiseExecutor<Input, Output>
 

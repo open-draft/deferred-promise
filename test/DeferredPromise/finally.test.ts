@@ -1,7 +1,7 @@
 import { DeferredPromise } from '../../src/DeferredPromise'
 
 it('executes the "finally" block when the promise resolves', async () => {
-  const promise = new DeferredPromise()
+  const promise = new DeferredPromise<void>()
   const finallyCallback = jest.fn()
   promise.finally(finallyCallback)
 

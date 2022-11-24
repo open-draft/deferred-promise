@@ -18,7 +18,7 @@ export type DeferredPromiseExecutor<Input = void, Output = Input> = {
   rejectionReason?: unknown
 }
 export function createDeferredExecutor<
-  Input = void,
+  Input = never,
   Output = Input
 >(): DeferredPromiseExecutor<Input, Output> {
   const executor = <DeferredPromiseExecutor<Input, Output>>((
