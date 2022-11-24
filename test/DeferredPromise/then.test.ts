@@ -23,6 +23,7 @@ it('supports value transform via chaining', async () => {
   p1.resolve(5)
 
   expect(await p1).toBe(14)
+  expect(p1.state).toBe('fulfilled')
 })
 
 it('supports two independent transform chains', async () => {

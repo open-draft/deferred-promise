@@ -1,14 +1,14 @@
 import { DeferredPromise } from '../../src/DeferredPromise'
 
 it('can be listened to with "catch"', async () => {
-  const catchCallback = jest.fn()
-  const promise = new DeferredPromise().catch(catchCallback)
+  const promise = new DeferredPromise().catch((reason) => reason)
 
-  promise.reject('error')
+  promise.reject('reason')
 
-  expect(await promise).toBeUndefined()
-  expect(promise.state).toBe('rejected')
-  expect(catchCallback).toHaveBeenCalledWith('error')
+  expect(await promise).toBe('reason')
+  expect(promise.state).toBe('fulfilled')
+
+  queueMicrotask(() => console.log(promise.state))
 })
 
 it('propagates a caught error to derived promises', async () => {
@@ -36,6 +36,7 @@ it('allows chaining "then" after "catch"', async () => {
   promise.reject(5)
 
   expect(await promise).toBe(15)
+  expect(promise.state).toBe('rejected')
 })
 
 it('supports complex then/catch chains', async () => {
