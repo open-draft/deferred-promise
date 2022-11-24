@@ -12,8 +12,12 @@ npm install @open-draft/deferred-promise
 
 ## Documentation
 
-- [`createDeferredExecutor()`](#createdeferredexecutor)
-- [Class: `DeferredPromise`](#class-deferredpromise)
+- [**`createDeferredExecutor()`**](#createdeferredexecutor)
+  - [`DeferredExecutor.state`](#deferredexecutorstate)
+  - [`DeferredExecutor.resolve()`](#deferredexecutorresolve)
+  - [`DeferredExecutor.reject()`](#deferredexecutorreject)
+  - [`DeferredExecutor.rejectionReason`](#deferredexecutorrejectionreason)
+- [**Class: `DeferredPromise`**](#class-deferredpromise)
   - [`new DeferredPromise()`](#new-defferedpromise)
   - [`deferredPromise.state`](#deferredpromisestate)
   - [`deferredPromise.resolve()`](#deferredpromiseresolve)
@@ -46,6 +50,74 @@ executor.reject('reason')
 
 nextTick(() => {
   console.log(executor.rejectionReason) // "reason"
+})
+```
+
+### `DeferredExecutor.state`
+
+- `<"pending" | "fulfilled" | "rejected">` **Default:** `"pending"`
+
+```js
+const executor = createDeferredExecutor()
+const promise = new Promise(executor)
+
+console.log(executor.state) // "pending"
+```
+
+Calling [`resolve()`](#deferredexecutorresolve) and [`reject()`](#deferredexecutorreject) methods of the executor transitions the state to "fulfilled" and "rejected" respectively.
+
+### `DeferredExecutor.resolve()`
+
+Resolves the promise with a given value.
+
+```js
+const executor = createDeferredExecutor()
+const promise = new Promise(executor)
+
+console.log(executor.state) // "pending"
+
+executor.resolve()
+
+// The promise state is still "pending"
+// because promises are settled in the next microtask.
+console.log(executor.state) // "pending"
+
+nextTick(() => {
+  // In the next microtask, the promise's state is resolved.
+  console.log(executor.state) // "fulfilled"
+})
+```
+
+### `DeferredExecutor.reject()`
+
+Rejects the promise with a given reason.
+
+```js
+const executor = createDeferredExecutor()
+const promise = new Promise(executor)
+
+executor.reject(new Error('Failed to fetch'))
+
+nextTick(() => {
+  console.log(executor.state) // "rejected"
+  console.log(executor.rejectionReason) // Error("Failed to fetch")
+})
+```
+
+You can access the rejection reason of the promise at any time by the [`rejectionReason`](#deferredexecutorrejectionreason) property of the deferred executor.
+
+### `DeferredExecutor.rejectionReason`
+
+Returns the reason of the promise rejection. If no reason has been provided to the `reject()` call, `undefined` is returned instead.
+
+```js
+const executor = createDeferredExecutor()
+const promise = new Promise(executor)
+
+promise.reject(new Error('Internal Server Error'))
+
+nextTick(() => {
+  console.log(promise.rejectionReason) // Error("Internal Server Error")
 })
 ```
 
@@ -98,77 +170,16 @@ Use the [`resolve()`](#deferredpromiseresolve) and [`reject()`](#deferredpromise
 
 ### `deferredPromise.state`
 
-- `<"pending" | "fulfilled" | "rejected">` **Default:** `"pending"`
-
-```js
-const promise = new DeferredPromise()
-
-console.log(promise.state) // "pending"
-promise.resolve()
-
-// The promise state is still "pending"
-// because promises are settled in the next microtask.
-console.log(promise.state) // "pending"
-
-nextTick(() => {
-  // In the next microtask, the promise's state is resolved.
-  console.log(promise.state) // "fulfilled"
-})
-```
+See [`DeferredExecutor.state`](#deferredexecutorstate)
 
 ### `deferredPromise.resolve()`
 
-Resolves the deferred promise with a given value.
-
-```js
-function startServer() {
-  const serverReady = new DeferredPromise()
-
-  new http.Server().listen(() => {
-    // Resolve the deferred promise with the server address
-    // once the server is ready.
-    serverReady.resolve('http://localhost:8080')
-  })
-
-  // Return the deferred promise to the consumer.
-  return serverReady
-}
-
-startServer().then((address) => {
-  console.log('Server is running at "%s"', address)
-})
-```
+See [`DeferredExecutor.resolve()`](#deferredexecutorresolve)
 
 ### `deferredPromise.reject()`
 
-Rejects the deferred promise with a given reason.
-
-```js
-function createBroadcast() {
-  const runtimePromise = new DeferredPromise()
-
-  receiver.on('error', (error) => {
-    // Reject the deferred promise in response
-    // to the incoming "error" event.
-    runtimePromise.reject(error)
-  })
-
-  // This deferred promise will be pending forever
-  // unless the broadcast channel receives the
-  // "error" event that rejects it.
-  return runtimePromise
-}
-```
-
-You can access the rejection reason of the deferred promise at any time by the [`rejectionReason`](#deferredpromiserejectionreason) property of that promise instance.
+See [`DeferredExecutor.reject()`](#deferredexecutorreject)
 
 ### `deferredPromise.rejectionReason`
 
-Returns the reason of the promise rejection. If no reason has been provided to the `.reject()` call, `undefined` is returned instead.
-
-```js
-const promise = new DeferredPromise()
-promise.reject(new Error('Internal Server Error'))
-
-console.log(promise.rejectionReason) // Error
-```
+See [`DeferredExecutor.rejectionReason`](#deferredexecutorrejectionreason)
