@@ -57,39 +57,30 @@ it('rejects the promise if a chained finally throws', async () => {
   promise.resolve(123)
 
   await expect(promise).rejects.toThrowError('reason')
+  expect(promise.state).toBe('rejected')
 })
 
-it.only('rejects the promise if a derived finally throws', async () => {
-  const promise = new DeferredPromise<number>()
+it('rejects a derived promise if its "finally" throws', async () => {
+  const promise = new DeferredPromise<number>('main')
   const derivedPromise = promise.finally(() => {
     throw new Error('reason')
   })
 
   promise.resolve(123)
 
-  await expect(promise).resolves.toBe(123)
-  // await expect(derivedPromise).rejects.toThrowError('reason')
-})
+  /**
+   * @issue
+   * 1. p1 resolves with 123.
+   * 2. p1 calls its ".then()" attached by "p1.finally()".
+   * 3. "onSettled" throws while p1 is resolving.
+   * 4. This directs the exception to rejecting p1.
+   * 5. p1 rejects but has no "catch" callback.
+   * 6. The exception is unhandled.
+   */
 
-it('how regular promise behaves', async () => {
-  const promise = new Promise((resolve) => {
-    resolve(123)
-  })
-
-  const derivedPromise = promise.finally(() => {
-    throw new Error('reason')
-  })
-
-  await expect(promise).resolves.toBe(123)
   await expect(derivedPromise).rejects.toThrowError('reason')
-})
+  expect(derivedPromise.state).toBe('rejected')
 
-it.skip('foo', async () => {
-  const promise = new Promise<number>((r) => r(123))
-  const derivedPromise = promise.finally(() => {
-    throw new Error('reason')
-  })
-
-  // await expect(promise).resolves.toBe(123)
-  await expect(derivedPromise).rejects.toThrowError('reason')
+  await expect(promise).resolves.toBe(123)
+  expect(promise.state).toBe('fulfilled')
 })
