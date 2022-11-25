@@ -7,8 +7,6 @@ it('can be listened to with "catch"', async () => {
 
   expect(await promise).toBe('reason')
   expect(promise.state).toBe('fulfilled')
-
-  queueMicrotask(() => console.log(promise.state))
 })
 
 it('propagates a caught error to derived promises', async () => {
@@ -18,6 +16,7 @@ it('propagates a caught error to derived promises', async () => {
   p1.reject('hello')
 
   expect(await p2).toBe('hello')
+  expect(p2.state).toBe('fulfilled')
 })
 
 it('allows chaining "then" after "catch"', async () => {
@@ -66,6 +65,7 @@ it('supports complex then/catch chains', async () => {
   promise.resolve(5)
 
   expect(await promise).toEqual(['10', 'APPLES'])
+  expect(promise.state).toBe('fulfilled')
 })
 
 it('supports a Promise returned from "catch"', async () => {
@@ -78,6 +78,7 @@ it('supports a Promise returned from "catch"', async () => {
   promise.reject(123)
 
   expect(await promise).toBe('123')
+  expect(promise.state).toBe('fulfilled')
 })
 
 it('supports a DeferredPromise returned from "catch"', async () => {
@@ -90,4 +91,5 @@ it('supports a DeferredPromise returned from "catch"', async () => {
   promise.reject(123)
 
   expect(await promise).toBe('123')
+  expect(promise.state).toBe('fulfilled')
 })

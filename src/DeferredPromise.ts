@@ -167,29 +167,67 @@ import {
 //
 
 export class DeferredPromise<T = never> extends Promise<T> {
+  public state: PromiseState
   public resolve: Function
   public reject: Function
+  public rejectionReason: unknown
 
-  #executor: DeferredPromiseExecutor<any, any>
+  private executor: DeferredPromiseExecutor<any, any>
 
   constructor(executor?: any) {
-    executor = executor || createDeferredExecutor<any, any>()
+    executor = executor || (() => {})
 
-    super(executor)
+    let _resolve, _reject
+    super((a, b) => {
+      executor((_resolve = a), (_reject = b))
+    })
 
-    this.#executor = executor
-    this.resolve = this.#executor.resolve
-    this.reject = this.#executor.reject
+    this.state = 'pending'
+
+    this.resolve = (data) => {
+      if (this.state !== 'pending') {
+        return _resolve(data)
+      }
+
+      return _resolve(
+        DeferredPromise.resolve(data).then((result) => {
+          this.state = 'fulfilled'
+          return result
+        })
+      )
+    }
+
+    this.reject = (reason: unknown) => {
+      if (this.state !== 'pending') {
+        return _reject(reason)
+      }
+
+      this.rejectionReason = reason
+      queueMicrotask(() => (this.state = 'rejected'))
+      return _reject(reason)
+    }
   }
 
-  public get state(): PromiseState {
-    return this.#executor.state
-  }
+  // public get state(): PromiseState {
+  //   return this.executor.state
+  // }
 
   #decorate(promise: Promise<any>) {
     return Object.defineProperties(promise, {
-      resolve: { value: this.#executor.resolve },
-      reject: { value: this.#executor.reject },
+      resolve: {
+        value: this.resolve,
+      },
+      reject: {
+        value: this.reject,
+      },
+      state: {
+        configurable: true,
+        get: () => this.state,
+      },
+      rejectionReason: {
+        configurable: true,
+        get: () => this.rejectionReason,
+      },
     })
   }
 
@@ -202,8 +240,13 @@ export class DeferredPromise<T = never> extends Promise<T> {
     ) as DeferredPromise<R1 | R2>
   }
 
-  catch(...args: any[]): any {
-    return this.#decorate(super.catch(...args))
+  catch(onReject?: any): any {
+    return this.then(undefined, onReject)
+    // return this.#decorate(
+    //   super.catch((reason) => {
+    //     this.rejectionReason = onReject?.(reason)
+    //   })
+    // )
   }
 
   finally(...args: any[]): any {
