@@ -9,7 +9,7 @@ export type RejectFunction<Result = unknown> = (
 ) => Result | PromiseLike<Result>
 
 export type DeferredPromiseExecutor<Input = void, Output = Input> = {
-  (resolve?: ResolveFunction<any, unknown>, reject?: RejectFunction): void
+  (resolve?: ResolveFunction<any, any>, reject?: RejectFunction): void
 
   resolve: ResolveFunction<Input, Output | void>
   reject: RejectFunction
@@ -28,23 +28,29 @@ export function createDeferredExecutor<
     executor.state = 'pending'
 
     executor.resolve = (data) => {
+      if (executor.state !== 'pending') {
+        return resolve(data)
+      }
+
+      executor.result = data
       queueMicrotask(() => {
-        if (executor.state === 'pending') {
-          executor.state = 'fulfilled'
-          executor.result = data
-          resolve(data)
-        }
+        executor.state = 'fulfilled'
       })
+
+      return resolve(data)
     }
 
     executor.reject = (reason) => {
+      if (executor.state !== 'pending') {
+        return reject(reason)
+      }
+
+      executor.rejectionReason = reason
       queueMicrotask(() => {
-        if (executor.state === 'pending') {
-          executor.state = 'rejected'
-          executor.rejectionReason = reason
-          reject(reason)
-        }
+        executor.state = 'rejected'
       })
+
+      return reject(reason)
     }
   })
 

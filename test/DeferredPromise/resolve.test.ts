@@ -37,11 +37,11 @@ it('does nothing when resolving an already resolved promise', async () => {
 })
 
 it('throws when resolving an already rejected promise', async () => {
-  const promise = new DeferredPromise().catch((error) => error)
+  const promise = new DeferredPromise()
   expect(promise.state).toBe('pending')
   promise.reject('first reason')
 
-  await promise
+  await expect(promise).rejects.toBe('first reason')
   expect(promise.state).toBe('rejected')
   expect(promise.rejectionReason).toBe('first reason')
 

@@ -24,7 +24,7 @@ export class DeferredPromise<Input = never, Output = Input> {
 
   constructor() {
     this.#executor = createDeferredExecutor<Input, Output>()
-    this.#promise = new Promise<Output>(this.#executor)
+    this.#promise = new Promise<Output>(this.#executor as any)
 
     this.resolve = this.#executor.resolve
     this.reject = this.#executor.reject
@@ -92,12 +92,12 @@ export class DeferredPromise<Input = never, Output = Input> {
            * still mark its state as rejected. Do so in the next microtask
            * because executor rejects the promise in the next task as well
            */
-          queueMicrotask(() => {
-            derivedPromise.#executor.state = 'rejected'
-            derivedPromise.#executor.rejectionReason = nextReason
-          })
+          // queueMicrotask(() => {
+          //   derivedPromise.#executor.state = 'rejected'
+          //   derivedPromise.#executor.rejectionReason = nextReason
+          // })
         } catch (error) {
-          rejectDerivedPromise(error)
+          derivedPromise.#executor.reject(error)
         }
 
         return
