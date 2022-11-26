@@ -2,12 +2,12 @@ export type Executor<T> = ConstructorParameters<typeof Promise<T>>[0]
 export type ResolveFn<T> = Parameters<Executor<T>>[0]
 export type RejectFn<T> = Parameters<Executor<T>>[1]
 
-export class DeferredPromise<T> extends Promise<T> {
+export class DeferredPromise<T, ResolveT = T> extends Promise<T> {
   #state: 'pending' | 'fulfilled' | 'rejected' = 'pending'
   #rejectionReason = undefined
 
-  resolve: (value?: any) => void // TODO: type value (keep T | PromiseLike<T> when chained)
-  reject: RejectFn<T>
+  resolve: ResolveFn<ResolveT>
+  reject: RejectFn<ResolveT>
 
   constructor(executor: Executor<T> = null) {
     let resolve: ResolveFn<T>, reject: RejectFn<T>
@@ -34,8 +34,8 @@ export class DeferredPromise<T> extends Promise<T> {
       executor?.(resolve, reject)
     })
 
-    this.resolve = resolve
-    this.reject = reject
+    this.resolve = resolve as ResolveFn<ResolveT>
+    this.reject = reject as RejectFn<ResolveT>
   }
 
   get state() {
@@ -45,11 +45,11 @@ export class DeferredPromise<T> extends Promise<T> {
     return this.#rejectionReason
   }
 
-  #decorate<V>(promise: Promise<V>) {
+  #decorate<ChildT>(promise: Promise<ChildT>) {
     return Object.defineProperties(promise, {
       resolve: { configurable: true, value: this.resolve },
       reject: { configurable: true, value: this.reject },
-    }) as DeferredPromise<V>
+    }) as DeferredPromise<ChildT, ResolveT>
   }
 
   then<ThenResult = T, CatchResult = never>(
@@ -59,7 +59,7 @@ export class DeferredPromise<T> extends Promise<T> {
     return this.#decorate(super.then(onfulfilled, onrejected))
   }
 
-  catch<Result = never>(onrejected?: (reason: any) => Result | PromiseLike<Result>) {
+  catch<CatchResult = never>(onrejected?: (reason: any) => CatchResult | PromiseLike<CatchResult>) {
     return this.#decorate(super.catch(onrejected))
   }
 

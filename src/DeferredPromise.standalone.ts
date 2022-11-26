@@ -2,7 +2,7 @@ export type Executor<T> = ConstructorParameters<typeof Promise<T>>[0]
 export type ResolveFn<T> = Parameters<Executor<T>>[0]
 export type RejectFn<T> = Parameters<Executor<T>>[1]
 
-export class DeferredPromise<T> implements Promise<T> {
+export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
   get [Symbol.toStringTag]() {
     return 'DeferredPromise'
   }
@@ -11,8 +11,8 @@ export class DeferredPromise<T> implements Promise<T> {
   #value: T = undefined
   #queue: (() => void)[] = []
 
-  public resolve: (value?: any) => void // TODO: type value (keep T | PromiseLike<T> when chained)
-  public reject: RejectFn<T>
+  public resolve: ResolveFn<ResolveT>
+  public reject: RejectFn<ResolveT>
 
   get state() {
     return this.#state
@@ -37,14 +37,14 @@ export class DeferredPromise<T> implements Promise<T> {
       reject(reason)
     }
 
-    this.resolve = resolve
-    this.reject = reject
+    this.resolve = resolve as ResolveFn<ResolveT>
+    this.reject = reject as RejectFn<ResolveT>
   }
 
   then<ThenResult = T, CatchResult = never>(
     onFulfill?: (value: T) => ThenResult | PromiseLike<ThenResult>,
     onReject?: (reason: any) => CatchResult | PromiseLike<CatchResult>
-  ): DeferredPromise<ThenResult | CatchResult> {
+  ) {
     if (typeof onFulfill !== 'function') onFulfill = (x: any) => x
     if (typeof onReject !== 'function') {
       onReject = (x) => {
@@ -52,8 +52,10 @@ export class DeferredPromise<T> implements Promise<T> {
       }
     }
 
-    const childPromise = new DeferredPromise<ThenResult | CatchResult>()
-    const { resolve: childResolve, reject: childReject } = childPromise
+    type ChildT = ThenResult | CatchResult
+    const childPromise = new DeferredPromise<ChildT, ResolveT>()
+    const childResolve = childPromise.resolve as ResolveFn<ChildT>
+    const childReject = childPromise.reject as RejectFn<ChildT>
 
     const onParentResolved = () => {
       try {
@@ -75,7 +77,7 @@ export class DeferredPromise<T> implements Promise<T> {
     return childPromise
   }
 
-  catch<Result = never>(onReject?: (reason: any) => Result | PromiseLike<Result>) {
+  catch<CatchResult = never>(onReject?: (reason: any) => CatchResult | PromiseLike<CatchResult>) {
     return this.then(undefined, onReject)
   }
 
