@@ -100,19 +100,21 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
 
   // Recursively unwrap promises until we reach a non-thenable value.
   // Fulfill with this value or reject if something in the chain throws/rejects.
-  #fulfill(next: Parameters<ResolveFn<T>>[0]) {
+  #fulfill<N>(next: Parameters<ResolveFn<N>>[0]) {
     if (next === this) {
       return this.#reject(
         new TypeError(`Chaining cycle detected for promise: ${next}`)
       )
     }
 
+    type NextValue = Awaited<typeof next>
+
     // If next could be a thenable (object or function), check for a .then method.
     // It could be a getter that throws - catch and reject promise in that case.
-    let then: Executor<any> | undefined
+    let then: Executor<NextValue> | undefined
     if (typeof next === 'object' || typeof next === 'function') {
       try {
-        then = (next as any)?.then
+        then = (next as PromiseLike<NextValue>)?.then
       } catch (error) {
         return this.#reject(error)
       }
@@ -123,10 +125,10 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
     if (typeof then === 'function') {
       let handled = false
 
-      const onResolve: ResolveFn<T> = (value) => {
+      const onResolve: ResolveFn<NextValue> = (value) => {
         !handled && (handled = true) && this.#fulfill(value)
       }
-      const onReject: RejectFn<T> = (reason) => {
+      const onReject: RejectFn<NextValue> = (reason) => {
         !handled && (handled = true) && this.#reject(reason)
       }
 
