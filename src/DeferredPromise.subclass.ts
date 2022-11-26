@@ -18,9 +18,11 @@ export class DeferredPromise<T, ResolveT = T> extends Promise<T> {
       resolve = (next) => {
         if (!resolved) {
           resolved = true
-          const onFulfilled = <V>(value: V) => ((this.#state = 'fulfilled'), value)
-          // Pass `next` directly if it's `this` so the built-in recursion error throws
-          originalResolve(next === this ? next : Promise.resolve(next).then(onFulfilled))
+          const onFulfilled = <V>(val: V) => ((this.#state = 'fulfilled'), val)
+          originalResolve(
+            // Pass `next` directly if it's `this` so the built-in recursion error throws
+            next === this ? next : Promise.resolve(next).then(onFulfilled)
+          )
         }
       }
       reject = (reason?) => {
@@ -59,7 +61,9 @@ export class DeferredPromise<T, ResolveT = T> extends Promise<T> {
     return this.#decorate(super.then(onfulfilled, onrejected))
   }
 
-  catch<CatchResult = never>(onrejected?: (reason: any) => CatchResult | PromiseLike<CatchResult>) {
+  catch<CatchResult = never>(
+    onrejected?: (reason: any) => CatchResult | PromiseLike<CatchResult>
+  ) {
     return this.#decorate(super.catch(onrejected))
   }
 
