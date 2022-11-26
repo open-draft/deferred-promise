@@ -15,7 +15,7 @@ import {
  *   returtn portReadyPromise
  * }
  */
-export class DeferredPromise<Input = never, Output = Input> {
+class DeferredPromise<Input = never, Output = Input> {
   #promise: Promise<Output>
   #executor: DeferredPromiseExecutor<Input, Output>
 
@@ -166,7 +166,7 @@ export class DeferredPromise<Input = never, Output = Input> {
     return this.then(undefined, onRejected)
   }
 
-  public finally(onSettled?: (() => void) | null) {
+  public finally(onSettled?: (() => void | Promise<any>) | null) {
     console.warn('[%s.finally()] called', this.name, this)
 
     return this.then(
@@ -181,3 +181,7 @@ export class DeferredPromise<Input = never, Output = Input> {
     )
   }
 }
+
+export { DeferredPromise }
+// export { DeferredPromise } from './DeferredPromise.subclass'
+// export { DeferredPromise } from './DeferredPromise.standalone'
