@@ -8,7 +8,7 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
   }
 
   #state: 'pending' | 'fulfilled' | 'rejected' = 'pending'
-  #value: T = undefined
+  #value: unknown = undefined
   #queue: (() => void)[] = []
 
   public resolve: ResolveFn<ResolveT>
@@ -21,7 +21,7 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
     return this.#state === 'rejected' ? this.#value : undefined
   }
 
-  constructor(executor: Executor<T> = null) {
+  constructor(executor: Executor<T> | null = null) {
     let handled = false
 
     const resolve: ResolveFn<T> = (value) => {
@@ -60,7 +60,7 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
     const onParentResolved = () => {
       try {
         childResolve(
-          (this.#state === 'rejected' ? onReject : onFulfill)(this.#value)
+          (this.#state === 'rejected' ? onReject : onFulfill)!(this.#value as T)
         )
       } catch (reason) {
         childReject(reason)
@@ -109,7 +109,7 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
 
     // If next could be a thenable (object or function), check for a .then method.
     // It could be a getter that throws - catch and reject promise in that case.
-    let then: Executor<any>
+    let then: Executor<any> | undefined
     if (typeof next === 'object' || typeof next === 'function') {
       try {
         then = (next as any)?.then
@@ -141,17 +141,17 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
       this.#value = next as Awaited<typeof next>
       this.#state = 'fulfilled'
 
-      let callback: () => void
+      let callback: (() => void) | undefined
       while ((callback = this.#queue.pop())) callback()
     }
   }
 
   // Rejecting has no unwrapping behavior, so we can settle immediately.
-  #reject(reason: any) {
+  #reject(reason: unknown) {
     this.#value = reason
     this.#state = 'rejected'
 
-    let callback: () => void
+    let callback: (() => void) | undefined
     while ((callback = this.#queue.pop())) callback()
   }
 }
