@@ -1,4 +1,4 @@
-import { DeferredPromise } from './src/DeferredPromise'
+import { DeferredPromise } from '../src/DeferredPromise'
 
 process.on('unhandledRejection', () => {})
 

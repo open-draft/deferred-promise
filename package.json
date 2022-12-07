@@ -6,7 +6,7 @@
   "typings": "./build/index.d.ts",
   "scripts": {
     "test": "jest",
-    "test-aplus": "export NODE_OPTIONS=--loader=tsx || set NODE_OPTIONS=--loader=tsx&& npx -y promises-aplus-tests aplus-tests-adapter.ts",
+    "test:compliance": "export NODE_OPTIONS=--loader=tsx || set NODE_OPTIONS=--loader=tsx&& npx -y promises-aplus-tests ./test/aplus-tests-adapter.ts",
     "prebuild": "rimraf ./build",
     "build": "tsc",
     "release": "release publish"

@@ -27,8 +27,11 @@ jobs:
 
       - run: npm ci
 
-      - name: Tests
+      - name: Tests (Unit)
         run: npm test
+
+      - name: Tests (Compliance)
+        run: npm run test:compliance
 
       - name: Build
         run: npm run build
