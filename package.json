@@ -1,7 +1,7 @@
 {
   "name": "@open-draft/deferred-promise",
   "version": "2.0.0",
-  "description": "A Promise that can be resolved/rejected elsewhere",
+  "description": "A Promise-compatible abstraction that defers resolving/rejecting promises to another closure.",
   "main": "./build/index.js",
   "typings": "./build/index.d.ts",
   "scripts": {
@@ -19,7 +19,8 @@
     "defer",
     "deferred",
     "resolve",
-    "reject"
+    "reject",
+    "executor"
   ],
   "author": "Artem Zakharchenko",
   "license": "MIT",

@@ -1,3 +1,9 @@
+/**
+ * This is a standalone implementation of `DeferredPromise` that
+ * doesn't rely on the Promise class at all.
+ * @author https://github.com/jonaskuske
+ */
+
 export type Executor<T> = ConstructorParameters<typeof Promise<T>>[0]
 export type ResolveFn<T> = Parameters<Executor<T>>[0]
 export type RejectFn<T> = Parameters<Executor<T>>[1]

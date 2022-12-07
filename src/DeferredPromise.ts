@@ -1,8 +1,8 @@
 import {
-  Executor,
-  RejectFunction,
-  ResolveFunction,
-  DeferredPromiseExecutor,
+  type Executor,
+  type RejectFunction,
+  type ResolveFunction,
+  type DeferredPromiseExecutor,
   createDeferredExecutor,
 } from './createDeferredExecutor'
 
