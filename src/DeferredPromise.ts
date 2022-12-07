@@ -1,61 +1,35 @@
-import type {
+import {
   Executor,
   RejectFunction,
   ResolveFunction,
-  PromiseState,
+  DeferredPromiseExecutor,
+  createDeferredExecutor,
 } from './createDeferredExecutor'
 
 export class DeferredPromise<Input, Output = Input> extends Promise<Input> {
-  #state: PromiseState
-  #rejectionReason: unknown
+  #executor: DeferredPromiseExecutor
 
   public resolve: ResolveFunction<Output>
   public reject: RejectFunction<Output>
 
   constructor(executor: Executor<Input> | null = null) {
-    let resolve: ResolveFunction<Input>
-    let reject: RejectFunction<Input>
-
+    const deferredExecutor = createDeferredExecutor()
     super((originalResolve, originalReject) => {
-      resolve = (next) => {
-        if (this.#state !== 'pending') {
-          return
-        }
-
-        const onFulfilled = <Value>(value: Value) => {
-          this.#state = 'fulfilled'
-          return value
-        }
-
-        originalResolve(
-          // Pass `next` directly if it's `this` so the built-in recursion error throws
-          next === this ? next : Promise.resolve(next).then(onFulfilled)
-        )
-      }
-
-      reject = (reason) => {
-        if (this.#state !== 'pending') {
-          return
-        }
-
-        queueMicrotask(() => (this.#state = 'rejected'))
-        originalReject((this.#rejectionReason = reason))
-      }
-
-      executor?.(resolve, reject)
+      deferredExecutor(originalResolve, originalReject)
+      executor?.(deferredExecutor.resolve, deferredExecutor.reject)
     })
 
-    this.#state = 'pending'
-    this.resolve = resolve as ResolveFunction<Output>
-    this.reject = reject as RejectFunction<Output>
+    this.#executor = deferredExecutor
+    this.resolve = this.#executor.resolve
+    this.reject = this.#executor.reject
   }
 
   public get state() {
-    return this.#state
+    return this.#executor.state
   }
 
   public get rejectionReason() {
-    return this.#rejectionReason
+    return this.#executor.rejectionReason
   }
 
   public then<ThenResult = Input, CatchResult = never>(
