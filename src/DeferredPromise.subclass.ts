@@ -40,8 +40,8 @@ export class DeferredPromise<Input, Output = Input> extends Promise<Input> {
     })
 
     this.#state = 'pending'
-    this.resolve = resolve! as ResolveFn<Output>
-    this.reject = reject! as RejectFn<Output>
+    this.resolve = resolve as ResolveFn<Output>
+    this.reject = reject as RejectFn<Output>
   }
 
   public get state() {
