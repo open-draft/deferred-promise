@@ -1,19 +1,15 @@
 export type PromiseState = 'pending' | 'fulfilled' | 'rejected'
 
-export type ResolveFunction<Data extends any, Result = void> = (
-  value: Data
-) => Result | PromiseLike<Result>
+export type Executor<Value> = ConstructorParameters<typeof Promise<Value>>[0]
+export type ResolveFunction<Value> = Parameters<Executor<Value>>[0]
+export type RejectFunction<Reason> = Parameters<Executor<Reason>>[1]
 
-export type RejectFunction<Result = unknown> = (
-  reason?: unknown
-) => Result | PromiseLike<Result>
+export type DeferredPromiseExecutor<Input = never, Output = Input> = {
+  (resolve?: ResolveFunction<Input>, reject?: RejectFunction<any>): void
 
-export type DeferredPromiseExecutor<Input = void, Output = Input> = {
-  (resolve?: ResolveFunction<any, any>, reject?: RejectFunction): void
-
-  resolve: ResolveFunction<Input, Output | void>
-  reject: RejectFunction
-  result?: Output | Input
+  resolve: ResolveFunction<Input>
+  reject: RejectFunction<any>
+  result?: Output
   state: PromiseState
   rejectionReason?: unknown
 }
@@ -32,7 +28,7 @@ export function createDeferredExecutor<
         return resolve(data)
       }
 
-      executor.result = data
+      executor.result = data as Output
       queueMicrotask(() => {
         executor.state = 'fulfilled'
       })

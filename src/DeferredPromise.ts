@@ -1,187 +1,86 @@
-import {
-  createDeferredExecutor,
-  DeferredPromiseExecutor,
-  PromiseState,
-  ResolveFunction,
+import type {
+  Executor,
   RejectFunction,
+  ResolveFunction,
+  PromiseState,
 } from './createDeferredExecutor'
 
-/**
- * @example
- * function getPort() {
- *   const portReadyPromise = new DeferredPromise<number>()
- *   port.on('ready', (port) => portReadyPromise.resolve(port))
- *   port.on('error', (error) => portReadyPromise.reject(error))
- *   returtn portReadyPromise
- * }
- */
-class DeferredPromise<Input = never, Output = Input> {
-  #promise: Promise<Output>
-  #executor: DeferredPromiseExecutor<Input, Output>
+export class DeferredPromise<Input, Output = Input> extends Promise<Input> {
+  #state: PromiseState
+  #rejectionReason: unknown
 
-  public resolve: (value: Input) => void
-  public reject: (reason?: unknown) => void
+  public resolve: ResolveFunction<Output>
+  public reject: RejectFunction<Output>
 
-  constructor(public name?: string) {
-    this.#executor = createDeferredExecutor<Input, Output>()
-    this.#promise = new Promise<Output>(this.#executor as any)
+  constructor(executor: Executor<Input> | null = null) {
+    let resolve: ResolveFunction<Input>
+    let reject: RejectFunction<Input>
 
-    Object.defineProperty(this.#executor.resolve, 'name', {
-      value: `resolve(${this.name})`,
-    })
-    Object.defineProperty(this.#executor.reject, 'name', {
-      value: `reject(${this.name})`,
-    })
-
-    this.resolve = (result) => {
-      console.warn('[%s.resolve()]:', this.name, result, this)
-      return this.#executor.resolve(result)
-    }
-
-    this.reject = (reason) => {
-      console.warn('[%s.reject()]:', this.name, reason, this)
-      return this.#executor.reject(reason)
-    }
-  }
-
-  static get [Symbol.species]() {
-    return Promise
-  }
-
-  get [Symbol.toStringTag]() {
-    return 'DeferredPromise'
-  }
-
-  public get state(): PromiseState {
-    return this.#executor.state
-  }
-
-  public get rejectionReason(): unknown {
-    return this.#executor.rejectionReason
-  }
-
-  public callbacks = []
-
-  public then<FulfillmentResult = Output, RejectionResult = never>(
-    onFulfilled?: ResolveFunction<Output, FulfillmentResult> | null,
-    onRejected?: RejectFunction<RejectionResult> | null
-  ): DeferredPromise<Input, FulfillmentResult | RejectionResult> {
-    const derivedPromise = new DeferredPromise<
-      Input,
-      FulfillmentResult | RejectionResult
-    >('derived')
-
-    const resolveDerivedPromise = (result: any): void => {
-      console.log('[resolveDerivedPromise]', derivedPromise, {
-        result,
-        onFulfilled,
-        onRejected,
-      })
-
-      if (typeof onFulfilled === 'function') {
-        try {
-          const nextResult = onFulfilled(result)
-          derivedPromise.#executor.resolve(nextResult as Input)
-        } catch (error) {
-          console.error('[resolveDerivedPromise] exception', { error })
-          console.log(
-            'calling derivedPromise.#executor.reject...',
-            derivedPromise.#executor.reject
-          )
-
-          derivedPromise.#executor.reject(error)
+    super((originalResolve, originalReject) => {
+      resolve = (next) => {
+        if (this.#state !== 'pending') {
+          return
         }
-      } else {
-        /**
-         * @note Use the executor directly because the "resolve" method
-         * always gets overridden to point to the previous Promise in the chain.
-         */
-        derivedPromise.#executor.resolve(result)
-      }
-    }
 
-    const rejectDerivedPromise = (result: RejectionResult): void => {
-      console.warn('[rejectDerivedPromise] ', this)
+        const onFulfilled = <Value>(value: Value) => {
+          this.#state = 'fulfilled'
+          return value
+        }
 
-      if (typeof onRejected === 'function') {
-        const nextReason = onRejected(result)
-        derivedPromise.#executor.resolve(nextReason as any)
-      } else {
-        derivedPromise.#executor.reject(result)
-      }
-    }
-
-    switch (this.state) {
-      case 'pending': {
-        /**
-         * @note Override the chainable "resolve" so that when called
-         * it executes the resolve of the Promise from which it was
-         * chained from.
-         *
-         * @example
-         * const p1 = new DeferredPromise().then(A).then(B)
-         * p1.resolve()
-         *
-         * Here, "p1" points to the rightmost promise (B) but the
-         * order of resolving the value must be left-to-right:
-         * Initial -> A -> B
-         */
-        derivedPromise.resolve = this.resolve
-        derivedPromise.reject = this.reject
-
-        this.#promise.then(
-          (result) => {
-            console.trace('[%s.#promise.then]:', this.name, result, this)
-            return resolveDerivedPromise(result)
-          },
-          (reason) => {
-            console.trace('[%s.#promise.catch]:', this.name, reason, this)
-
-            return rejectDerivedPromise(reason)
-          }
+        originalResolve(
+          // Pass `next` directly if it's `this` so the built-in recursion error throws
+          next === this ? next : Promise.resolve(next).then(onFulfilled)
         )
-
-        this.callbacks.push([onFulfilled?.name, onRejected?.name])
-
-        break
       }
 
-      case 'fulfilled': {
-        resolveDerivedPromise(this.#executor.result)
-        break
+      reject = (reason) => {
+        if (this.#state !== 'pending') {
+          return
+        }
+
+        queueMicrotask(() => (this.#state = 'rejected'))
+        originalReject((this.#rejectionReason = reason))
       }
 
-      case 'rejected': {
-        rejectDerivedPromise(this.#executor.rejectionReason as RejectionResult)
-        break
-      }
-    }
+      executor?.(resolve, reject)
+    })
 
-    return derivedPromise
+    this.#state = 'pending'
+    this.resolve = resolve as ResolveFunction<Output>
+    this.reject = reject as RejectFunction<Output>
   }
 
-  public catch<Result>(
-    onRejected?: RejectFunction<Result>
-  ): DeferredPromise<Input, Output | Result> {
-    return this.then(undefined, onRejected)
+  public get state() {
+    return this.#state
   }
 
-  public finally(onSettled?: (() => void | Promise<any>) | null) {
-    console.warn('[%s.finally()] called', this.name, this)
+  public get rejectionReason() {
+    return this.#rejectionReason
+  }
 
-    return this.then(
-      function finallyFulfilled(result) {
-        onSettled?.()
-        return result
-      },
-      function finallyRejected(reason) {
-        onSettled?.()
-        throw reason
-      }
-    )
+  public then<ThenResult = Input, CatchResult = never>(
+    onFulfilled?: (value: Input) => ThenResult | PromiseLike<ThenResult>,
+    onRejected?: (reason: any) => CatchResult | PromiseLike<CatchResult>
+  ) {
+    return this.#decorate(super.then(onFulfilled, onRejected))
+  }
+
+  public catch<CatchResult = never>(
+    onRejected?: (reason: any) => CatchResult | PromiseLike<CatchResult>
+  ) {
+    return this.#decorate(super.catch(onRejected))
+  }
+
+  public finally(onfinally?: () => void | Promise<any>) {
+    return this.#decorate(super.finally(onfinally))
+  }
+
+  #decorate<ChildInput>(
+    promise: Promise<ChildInput>
+  ): DeferredPromise<ChildInput, Output> {
+    return Object.defineProperties(promise, {
+      resolve: { configurable: true, value: this.resolve },
+      reject: { configurable: true, value: this.reject },
+    }) as DeferredPromise<ChildInput, Output>
   }
 }
-
-// export { DeferredPromise }
-export { DeferredPromise } from './DeferredPromise.subclass'
-// export { DeferredPromise } from './DeferredPromise.standalone'
