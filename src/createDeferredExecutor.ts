@@ -25,28 +25,31 @@ export function createDeferredExecutor<
 
     executor.resolve = (data) => {
       if (executor.state !== 'pending') {
-        return resolve(data)
+        return
       }
 
       executor.result = data as Output
-      queueMicrotask(() => {
-        executor.state = 'fulfilled'
-      })
 
-      return resolve(data)
+      const onFulfilled = <Value>(value: Value) => {
+        executor.state = 'fulfilled'
+        return value
+      }
+
+      return resolve(
+        data instanceof Promise ? data : Promise.resolve(data).then(onFulfilled)
+      )
     }
 
     executor.reject = (reason) => {
       if (executor.state !== 'pending') {
-        return reject(reason)
+        return
       }
 
-      executor.rejectionReason = reason
       queueMicrotask(() => {
         executor.state = 'rejected'
       })
 
-      return reject(reason)
+      return reject((executor.rejectionReason = reason))
     }
   })
 
