@@ -101,7 +101,9 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
   // Recursively unwrap promises until we reach a non-thenable value.
   // Fulfill with this value or reject if something in the chain throws/rejects.
   #fulfill<N>(next: Parameters<ResolveFn<N>>[0]) {
+    // @ts-ignore
     if (next === this) {
+      // @ts-ignore
       return this.#reject(
         new TypeError(`Chaining cycle detected for promise: ${next}`)
       )

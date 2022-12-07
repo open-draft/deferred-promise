@@ -182,6 +182,6 @@ class DeferredPromise<Input = never, Output = Input> {
   }
 }
 
-export { DeferredPromise }
-// export { DeferredPromise } from './DeferredPromise.subclass'
+// export { DeferredPromise }
+export { DeferredPromise } from './DeferredPromise.subclass'
 // export { DeferredPromise } from './DeferredPromise.standalone'
