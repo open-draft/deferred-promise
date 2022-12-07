@@ -183,3 +183,9 @@ See [`DeferredExecutor.reject()`](#deferredexecutorreject)
 ### `deferredPromise.rejectionReason`
 
 See [`DeferredExecutor.rejectionReason`](#deferredexecutorrejectionreason)
+
+---
+
+## Mentions
+
+- [Jonas Kuske](https://github.com/jonaskuske) for the phenomenal work around improving Promise-compliance.
