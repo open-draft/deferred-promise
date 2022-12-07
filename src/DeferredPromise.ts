@@ -1,164 +1,60 @@
 import {
+  type Executor,
+  type RejectFunction,
+  type ResolveFunction,
+  type DeferredPromiseExecutor,
   createDeferredExecutor,
-  DeferredPromiseExecutor,
-  PromiseState,
-  ResolveFunction,
-  RejectFunction,
 } from './createDeferredExecutor'
 
-/**
- * @example
- * function getPort() {
- *   const portReadyPromise = new DeferredPromise<number>()
- *   port.on('ready', (port) => portReadyPromise.resolve(port))
- *   port.on('error', (error) => portReadyPromise.reject(error))
- *   returtn portReadyPromise
- * }
- */
-export class DeferredPromise<Input = never, Output = Input> {
-  #promise: Promise<Output>
-  #executor: DeferredPromiseExecutor<Input, Output>
+export class DeferredPromise<Input, Output = Input> extends Promise<Input> {
+  #executor: DeferredPromiseExecutor
 
-  public resolve: (value: Input) => void
-  public reject: (reason?: unknown) => void
+  public resolve: ResolveFunction<Output>
+  public reject: RejectFunction<Output>
 
-  constructor() {
-    this.#executor = createDeferredExecutor<Input, Output>()
-    this.#promise = new Promise<Output>(this.#executor)
+  constructor(executor: Executor<Input> | null = null) {
+    const deferredExecutor = createDeferredExecutor()
+    super((originalResolve, originalReject) => {
+      deferredExecutor(originalResolve, originalReject)
+      executor?.(deferredExecutor.resolve, deferredExecutor.reject)
+    })
 
+    this.#executor = deferredExecutor
     this.resolve = this.#executor.resolve
     this.reject = this.#executor.reject
   }
 
-  static get [Symbol.species]() {
-    return Promise
-  }
-
-  get [Symbol.toStringTag]() {
-    return 'DeferredPromise'
-  }
-
-  public get state(): PromiseState {
+  public get state() {
     return this.#executor.state
   }
 
-  public get rejectionReason(): unknown {
+  public get rejectionReason() {
     return this.#executor.rejectionReason
   }
 
-  public then<FulfillmentResult = Output, RejectionResult = never>(
-    onFulfilled?: ResolveFunction<Output, FulfillmentResult> | null,
-    onRejected?: RejectFunction<RejectionResult> | null
-  ): DeferredPromise<Input, FulfillmentResult | RejectionResult> {
-    const derivedPromise = new DeferredPromise<
-      Input,
-      FulfillmentResult | RejectionResult
-    >()
-
-    const resolveDerivedPromise = (result: any): void => {
-      if (typeof onFulfilled === 'function') {
-        try {
-          const nextResult = onFulfilled(result)
-          derivedPromise.#executor.resolve(nextResult as Input)
-        } catch (error) {
-          rejectDerivedPromise(error)
-        }
-
-        return
-      }
-
-      /**
-       * @note Use the executor directly because the "resolve" method
-       * always gets overridden to point to the previous Promise in the chain.
-       */
-      derivedPromise.#executor.resolve(result)
-    }
-
-    const rejectDerivedPromise = (result: RejectionResult): void => {
-      if (typeof onRejected === 'function') {
-        try {
-          const nextReason = onRejected(result)
-
-          /**
-           * @note If the rejection has a handler callback ("catch"),
-           * resolve the chained promise instead of rejecting it.
-           * The "catch" callback is there precisely to prevent
-           * uncaught promise rejection errors.
-           */
-          derivedPromise.#executor.resolve(nextReason as Input)
-
-          /**
-           * @note Since the handled rejected promise was resolved internally,
-           * still mark its state as rejected. Do so in the next microtask
-           * because executor rejects the promise in the next task as well
-           */
-          queueMicrotask(() => {
-            derivedPromise.#executor.state = 'rejected'
-            derivedPromise.#executor.rejectionReason = nextReason
-          })
-        } catch (error) {
-          rejectDerivedPromise(error)
-        }
-
-        return
-      }
-
-      derivedPromise.#executor.reject(result)
-    }
-
-    switch (this.state) {
-      case 'pending': {
-        /**
-         * @note Override the chainable "resolve" so that when called
-         * it executes the resolve of the Promise from which it was
-         * chained from.
-         *
-         * @example
-         * const p1 = new DeferredPromise().then(A).then(B)
-         * p1.resolve()
-         *
-         * Here, "p1" points to the rightmost promise (B) but the
-         * order of resolving the value must be left-to-right:
-         * Initial -> A -> B
-         */
-        derivedPromise.resolve = this.resolve
-        derivedPromise.reject = this.reject
-
-        this.#promise.then(resolveDerivedPromise, rejectDerivedPromise)
-
-        break
-      }
-
-      case 'fulfilled': {
-        resolveDerivedPromise(this.#executor.result)
-        break
-      }
-
-      case 'rejected': {
-        rejectDerivedPromise(this.#executor.rejectionReason as RejectionResult)
-        break
-      }
-    }
-
-    return derivedPromise
+  public then<ThenResult = Input, CatchResult = never>(
+    onFulfilled?: (value: Input) => ThenResult | PromiseLike<ThenResult>,
+    onRejected?: (reason: any) => CatchResult | PromiseLike<CatchResult>
+  ) {
+    return this.#decorate(super.then(onFulfilled, onRejected))
   }
 
-  public catch<Result>(
-    onRejected?: RejectFunction<Result>
-  ): DeferredPromise<Input, Output | Result> {
-    return this.then(undefined, onRejected)
+  public catch<CatchResult = never>(
+    onRejected?: (reason: any) => CatchResult | PromiseLike<CatchResult>
+  ) {
+    return this.#decorate(super.catch(onRejected))
   }
 
-  public finally(onSettled?: (() => void) | null) {
-    return this.then(
-      (result) => {
-        onSettled?.()
-        return result
-      },
-      (reason) => {
-        onSettled?.()
-        throw reason
-      }
-    )
+  public finally(onfinally?: () => void | Promise<any>) {
+    return this.#decorate(super.finally(onfinally))
+  }
+
+  #decorate<ChildInput>(
+    promise: Promise<ChildInput>
+  ): DeferredPromise<ChildInput, Output> {
+    return Object.defineProperties(promise, {
+      resolve: { configurable: true, value: this.resolve },
+      reject: { configurable: true, value: this.reject },
+    }) as DeferredPromise<ChildInput, Output>
   }
 }

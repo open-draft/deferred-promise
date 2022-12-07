@@ -1,19 +1,15 @@
 export type PromiseState = 'pending' | 'fulfilled' | 'rejected'
 
-export type ResolveFunction<Data extends any, Result = void> = (
-  value: Data
-) => Result | PromiseLike<Result>
+export type Executor<Value> = ConstructorParameters<typeof Promise<Value>>[0]
+export type ResolveFunction<Value> = Parameters<Executor<Value>>[0]
+export type RejectFunction<Reason> = Parameters<Executor<Reason>>[1]
 
-export type RejectFunction<Result = unknown> = (
-  reason?: unknown
-) => Result | PromiseLike<Result>
+export type DeferredPromiseExecutor<Input = never, Output = Input> = {
+  (resolve?: ResolveFunction<Input>, reject?: RejectFunction<any>): void
 
-export type DeferredPromiseExecutor<Input = void, Output = Input> = {
-  (resolve?: ResolveFunction<any, unknown>, reject?: RejectFunction): void
-
-  resolve: ResolveFunction<Input, Output | void>
-  reject: RejectFunction
-  result?: Output | Input
+  resolve: ResolveFunction<Input>
+  reject: RejectFunction<any>
+  result?: Output
   state: PromiseState
   rejectionReason?: unknown
 }
@@ -28,23 +24,32 @@ export function createDeferredExecutor<
     executor.state = 'pending'
 
     executor.resolve = (data) => {
-      queueMicrotask(() => {
-        if (executor.state === 'pending') {
-          executor.state = 'fulfilled'
-          executor.result = data
-          resolve(data)
-        }
-      })
+      if (executor.state !== 'pending') {
+        return
+      }
+
+      executor.result = data as Output
+
+      const onFulfilled = <Value>(value: Value) => {
+        executor.state = 'fulfilled'
+        return value
+      }
+
+      return resolve(
+        data instanceof Promise ? data : Promise.resolve(data).then(onFulfilled)
+      )
     }
 
     executor.reject = (reason) => {
+      if (executor.state !== 'pending') {
+        return
+      }
+
       queueMicrotask(() => {
-        if (executor.state === 'pending') {
-          executor.state = 'rejected'
-          executor.rejectionReason = reason
-          reject(reason)
-        }
+        executor.state = 'rejected'
       })
+
+      return reject((executor.rejectionReason = reason))
     }
   })
 
