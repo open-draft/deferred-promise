@@ -1,6 +1,6 @@
 {
   "name": "@open-draft/deferred-promise",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A Promise-compatible abstraction that defers resolving/rejecting promises to another closure.",
   "main": "./build/index.js",
   "typings": "./build/index.d.ts",
