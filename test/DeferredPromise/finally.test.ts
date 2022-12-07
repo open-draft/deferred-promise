@@ -38,6 +38,7 @@ it('does not alter resolved data with ".finally()"', async () => {
 
   const finallyCallback = jest.fn(() => 'unexpected')
   const wrapper = (): Promise<number> => {
+    // @ts-expect-error (must only return a rejected Promise)
     return promise.finally(finallyCallback)
   }
 
@@ -61,7 +62,7 @@ it('rejects the promise if a chained finally throws', async () => {
 })
 
 it('rejects a derived promise if its "finally" throws', async () => {
-  const promise = new DeferredPromise<number>('main')
+  const promise = new DeferredPromise<number>()
   const derivedPromise = promise.finally(() => {
     throw new Error('reason')
   })
