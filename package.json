@@ -29,7 +29,7 @@
     "url": "https://github.com/open-draft/deferred-promise"
   },
   "devDependencies": {
-    "@ossjs/release": "^0.4.0",
+    "@ossjs/release": "^0.7.2",
     "@types/jest": "^29.0.1",
     "jest": "^29.0.3",
     "rimraf": "^3.0.2",

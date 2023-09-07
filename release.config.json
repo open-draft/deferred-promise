@@ -1,0 +1,8 @@
+{
+  "profiles": [
+    {
+      "name": "latest",
+      "use": "npm publish --access public"
+    }
+  ]
+}
