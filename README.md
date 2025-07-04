@@ -18,7 +18,7 @@ npm install @open-draft/deferred-promise
   - [`DeferredExecutor.reject()`](#deferredexecutorreject)
   - [`DeferredExecutor.rejectionReason`](#deferredexecutorrejectionreason)
 - [**Class: `DeferredPromise`**](#class-deferredpromise)
-  - [`new DeferredPromise()`](#new-defferedpromise)
+  - [`new DeferredPromise()`](#new-deferredpromise)
   - [`deferredPromise.state`](#deferredpromisestate)
   - [`deferredPromise.resolve()`](#deferredpromiseresolve)
   - [`deferredPromise.reject()`](#deferredpromisereject)
@@ -114,10 +114,10 @@ Returns the reason of the promise rejection. If no reason has been provided to t
 const executor = createDeferredExecutor()
 const promise = new Promise(executor)
 
-promise.reject(new Error('Internal Server Error'))
+executor.reject(new Error('Internal Server Error'))
 
 nextTick(() => {
-  console.log(promise.rejectionReason) // Error("Internal Server Error")
+  console.log(executor.rejectionReason) // Error("Internal Server Error")
 })
 ```
 
@@ -125,7 +125,7 @@ nextTick(() => {
 
 ## Class: `DeferredPromise`
 
-### `new DefferedPromise()`
+### `new DeferredPromise()`
 
 Creates a new instance of a deferred promise.
 
@@ -140,7 +140,7 @@ A deferred promise is a Promise-compatible class that constructs a regular Promi
 A deferred promise is fully compatible with the regular Promise, both type- and runtime-wise, e.g. a deferred promise can be chained and awaited normally.
 
 ```js
-const promise = new DefferredPromise()
+const promise = new DeferredPromise()
   .then((value) => value.toUpperCase())
   .then((value) => value.substring(0, 2))
   .catch((error) => console.error(error))
