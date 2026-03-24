@@ -1,11 +1,11 @@
-import { DeferredPromise } from '../../src/DeferredPromise'
+import { DeferredPromise } from '../../src/deferred-promise'
 
 it('can be listened to with "catch"', async () => {
   const promise = new DeferredPromise().catch((reason) => reason)
 
   promise.reject('reason')
 
-  expect(await promise).toBe('reason')
+  await expect(promise).resolves.toBe('reason')
   expect(promise.state).toBe('fulfilled')
 })
 
@@ -36,7 +36,7 @@ it('allows chaining "then" after "catch"', async () => {
 
   promise.reject(5)
 
-  expect(await promise).toBe(15)
+  await expect(promise).resolves.toBe(15)
   expect(promise.state).toBe('fulfilled')
 })
 
@@ -66,7 +66,7 @@ it('supports complex then/catch chains', async () => {
 
   promise.resolve(5)
 
-  expect(await promise).toEqual(['10', 'APPLES'])
+  await expect(promise).resolves.toEqual(['10', 'APPLES'])
 })
 
 it('supports a Promise returned from "catch"', async () => {
@@ -78,7 +78,7 @@ it('supports a Promise returned from "catch"', async () => {
 
   promise.reject(123)
 
-  expect(await promise).toBe('123')
+  await expect(promise).resolves.toBe('123')
 })
 
 it('supports a DeferredPromise returned from "catch"', async () => {
@@ -90,5 +90,5 @@ it('supports a DeferredPromise returned from "catch"', async () => {
 
   promise.reject(123)
 
-  expect(await promise).toBe('123')
+  await expect(promise).resolves.toBe('123')
 })

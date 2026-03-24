@@ -1,7 +1,7 @@
-import { createDeferredExecutor } from '../src/createDeferredExecutor'
+import { createDeferredExecutor } from '../src/create-deferred-executor'
 
 it('can be listened to with ".catch()"', async () => {
-  const catchCallback = jest.fn()
+  const catchCallback = vi.fn()
   const executor = createDeferredExecutor<number>()
   const promise = new Promise(executor).catch(catchCallback)
 
@@ -23,5 +23,5 @@ it('allows ".catch().then()" chaining', async () => {
 
   executor.reject(5)
 
-  expect(await promise).toBe(15)
+  await expect(promise).resolves.toBe(15)
 })

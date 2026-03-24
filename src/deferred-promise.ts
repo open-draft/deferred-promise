@@ -4,7 +4,7 @@ import {
   type ResolveFunction,
   type DeferredPromiseExecutor,
   createDeferredExecutor,
-} from './createDeferredExecutor'
+} from './create-deferred-executor'
 
 export class DeferredPromise<Input, Output = Input> extends Promise<Input> {
   #executor: DeferredPromiseExecutor
@@ -34,13 +34,13 @@ export class DeferredPromise<Input, Output = Input> extends Promise<Input> {
 
   public then<ThenResult = Input, CatchResult = never>(
     onFulfilled?: (value: Input) => ThenResult | PromiseLike<ThenResult>,
-    onRejected?: (reason: any) => CatchResult | PromiseLike<CatchResult>
+    onRejected?: (reason: any) => CatchResult | PromiseLike<CatchResult>,
   ) {
     return this.#decorate(super.then(onFulfilled, onRejected))
   }
 
   public catch<CatchResult = never>(
-    onRejected?: (reason: any) => CatchResult | PromiseLike<CatchResult>
+    onRejected?: (reason: any) => CatchResult | PromiseLike<CatchResult>,
   ) {
     return this.#decorate(super.catch(onRejected))
   }
@@ -50,7 +50,7 @@ export class DeferredPromise<Input, Output = Input> extends Promise<Input> {
   }
 
   #decorate<ChildInput>(
-    promise: Promise<ChildInput>
+    promise: Promise<ChildInput>,
   ): DeferredPromise<ChildInput, Output> {
     return Object.defineProperties(promise, {
       resolve: { configurable: true, value: this.resolve },

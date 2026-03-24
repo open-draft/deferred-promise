@@ -1,4 +1,4 @@
-import { DeferredPromise } from '../../src/DeferredPromise'
+import { DeferredPromise } from '../../src/deferred-promise'
 
 it('can be resolved without data', async () => {
   const promise = new DeferredPromise<void>()
@@ -6,7 +6,7 @@ it('can be resolved without data', async () => {
   promise.resolve()
 
   expect(promise.state).toBe('pending')
-  expect(await promise).toBeUndefined()
+  await expect(promise).resolves.toBeUndefined()
   expect(promise.state).toBe('fulfilled')
 })
 
@@ -17,7 +17,7 @@ it('can be resolved with data', async () => {
   promise.resolve(123)
 
   expect(promise.state).toBe('pending')
-  expect(await promise).toBe(123)
+  await expect(promise).resolves.toBe(123)
   expect(promise.state).toBe('fulfilled')
 })
 
@@ -27,13 +27,13 @@ it('does nothing when resolving an already resolved promise', async () => {
 
   promise.resolve(123)
   expect(promise.state).toBe('pending')
-  expect(await promise).toBe(123)
+  await expect(promise).resolves.toBe(123)
   expect(promise.state).toBe('fulfilled')
 
   // Resolving an already resolved Promise does nothing.
   promise.resolve(456)
   expect(promise.state).toBe('fulfilled')
-  expect(await promise).toBe(123)
+  await expect(promise).resolves.toBe(123)
 })
 
 it('throws when resolving an already rejected promise', async () => {

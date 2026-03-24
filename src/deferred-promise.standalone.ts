@@ -5,8 +5,8 @@
  */
 
 export type Executor<T> = ConstructorParameters<typeof Promise<T>>[0]
-export type ResolveFn<T> = Parameters<Executor<T>>[0]
-export type RejectFn<T> = Parameters<Executor<T>>[1]
+export type ResolveFunction<T> = Parameters<Executor<T>>[0]
+export type RejectFunction<T> = Parameters<Executor<T>>[1]
 
 export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
   get [Symbol.toStringTag]() {
@@ -17,8 +17,8 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
   #value: unknown = undefined
   #queue: (() => void)[] = []
 
-  public resolve: ResolveFn<ResolveT>
-  public reject: RejectFn<ResolveT>
+  public resolve: ResolveFunction<ResolveT>
+  public reject: RejectFunction<ResolveT>
 
   get state() {
     return this.#state
@@ -30,10 +30,10 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
   constructor(executor: Executor<T> | null = null) {
     let handled = false
 
-    const resolve: ResolveFn<T> = (value) => {
+    const resolve: ResolveFunction<T> = (value) => {
       !handled && (handled = true) && queueMicrotask(() => this.#fulfill(value))
     }
-    const reject: RejectFn<T> = (reason?) => {
+    const reject: RejectFunction<T> = (reason?) => {
       !handled && (handled = true) && queueMicrotask(() => this.#reject(reason))
     }
 
@@ -43,13 +43,13 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
       reject(reason)
     }
 
-    this.resolve = resolve as ResolveFn<ResolveT>
-    this.reject = reject as RejectFn<ResolveT>
+    this.resolve = resolve as ResolveFunction<ResolveT>
+    this.reject = reject as RejectFunction<ResolveT>
   }
 
   then<ThenResult = T, CatchResult = never>(
     onFulfill?: (value: T) => ThenResult | PromiseLike<ThenResult>,
-    onReject?: (reason: any) => CatchResult | PromiseLike<CatchResult>
+    onReject?: (reason: any) => CatchResult | PromiseLike<CatchResult>,
   ) {
     if (typeof onFulfill !== 'function') onFulfill = (x: any) => x
     if (typeof onReject !== 'function') {
@@ -60,13 +60,15 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
 
     type ChildT = ThenResult | CatchResult
     const childPromise = new DeferredPromise<ChildT, ResolveT>()
-    const childResolve = childPromise.resolve as ResolveFn<ChildT>
-    const childReject = childPromise.reject as RejectFn<ChildT>
+    const childResolve = childPromise.resolve as ResolveFunction<ChildT>
+    const childReject = childPromise.reject as RejectFunction<ChildT>
 
     const onParentResolved = () => {
       try {
         childResolve(
-          (this.#state === 'rejected' ? onReject : onFulfill)!(this.#value as T)
+          (this.#state === 'rejected' ? onReject : onFulfill)!(
+            this.#value as T,
+          ),
         )
       } catch (reason) {
         childReject(reason)
@@ -86,14 +88,15 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
   }
 
   catch<CatchResult = never>(
-    onReject?: (reason: any) => CatchResult | PromiseLike<CatchResult>
+    onReject?: (reason: any) => CatchResult | PromiseLike<CatchResult>,
   ) {
     return this.then(undefined, onReject)
   }
 
   finally(onFinally?: () => void | Promise<any>) {
     const resolveValueIfFinallyFulfills = <V>(value: V) => {
-      const resolveFinally = (resolve: ResolveFn<any>) => resolve(onFinally?.())
+      const resolveFinally = (resolve: ResolveFunction<any>) =>
+        resolve(onFinally?.())
       return new DeferredPromise(resolveFinally).then(() => value)
     }
 
@@ -106,12 +109,12 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
 
   // Recursively unwrap promises until we reach a non-thenable value.
   // Fulfill with this value or reject if something in the chain throws/rejects.
-  #fulfill<N>(next: Parameters<ResolveFn<N>>[0]) {
+  #fulfill<N>(next: Parameters<ResolveFunction<N>>[0]) {
     // @ts-ignore
     if (next === this) {
       // @ts-ignore
       return this.#reject(
-        new TypeError(`Chaining cycle detected for promise: ${next}`)
+        new TypeError(`Chaining cycle detected for promise: ${next}`),
       )
     }
 
@@ -133,10 +136,10 @@ export class DeferredPromise<T, ResolveT = T> implements Promise<T> {
     if (typeof then === 'function') {
       let handled = false
 
-      const onResolve: ResolveFn<NextValue> = (value) => {
+      const onResolve: ResolveFunction<NextValue> = (value) => {
         !handled && (handled = true) && this.#fulfill(value)
       }
-      const onReject: RejectFn<NextValue> = (reason) => {
+      const onReject: RejectFunction<NextValue> = (reason) => {
         !handled && (handled = true) && this.#reject(reason)
       }
 

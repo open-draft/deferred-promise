@@ -1,9 +1,9 @@
-import { createDeferredExecutor } from '../src/createDeferredExecutor'
+import { createDeferredExecutor } from '../src/create-deferred-executor'
 
 it('executes the "finally" block when the promise resolves', async () => {
   const executor = createDeferredExecutor<void>()
   const promise = new Promise(executor)
-  const finallyCallback = jest.fn()
+  const finallyCallback = vi.fn()
   promise.finally(finallyCallback)
 
   // Promise is still pending.
@@ -20,7 +20,7 @@ it('executes the "finally" block when the promise rejects', async () => {
   const executor = createDeferredExecutor<number>()
   const promise = new Promise(executor).catch(() => {})
 
-  const finallyCallback = jest.fn()
+  const finallyCallback = vi.fn()
   promise.finally(finallyCallback)
 
   // Promise is still pending.
@@ -37,7 +37,7 @@ it('does not alter resolved data with ".finally()"', async () => {
   const executor = createDeferredExecutor<number>()
   const promise = new Promise(executor)
 
-  const finallyCallback = jest.fn(() => 'unexpected')
+  const finallyCallback = vi.fn(() => 'unexpected')
   const wrapper = (): Promise<number> => {
     return promise.finally(finallyCallback)
   }
