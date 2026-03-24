@@ -10,7 +10,7 @@
     "start": "tsdown -w",
     "lint": "publint",
     "test": "vitest",
-    "test:compliance": "export NODE_OPTIONS=--loader=tsx || set NODE_OPTIONS=--loader=tsx&& npx -y promises-aplus-tests ./test/aplus-tests-adapter.ts",
+    "test:compliance": "export NODE_OPTIONS=--import=tsx || set NODE_OPTIONS=--import=tsx&& npx -y promises-aplus-tests ./test/aplus-tests-adapter.ts",
     "build": "tsdown",
     "release": "release publish"
   },
