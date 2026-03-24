@@ -1,12 +1,10 @@
 {
+  "include": ["./src"],
+  "exclude": ["node_modules"],
   "compilerOptions": {
     "target": "esnext",
-    "module": "commonjs",
-    "esModuleInterop": true,
-    "outDir": "./build",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "declaration": true,
-    "sourceMap": true
   },
-  "include": ["./src"],
-  "exclude": ["node_modules"]
 }

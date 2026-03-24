@@ -1,4 +1,4 @@
-import { createDeferredExecutor } from '../src/createDeferredExecutor'
+import { createDeferredExecutor } from '../src/create-deferred-executor'
 
 it('can be rejected without any reason', async () => {
   const executor = createDeferredExecutor<void>()

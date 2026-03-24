@@ -1,8 +1,8 @@
-import { DeferredPromise } from '../../src/DeferredPromise'
+import { DeferredPromise } from '../../src/deferred-promise'
 
 it('executes the "finally" block when the promise resolves', async () => {
   const promise = new DeferredPromise<void>()
-  const finallyCallback = jest.fn()
+  const finallyCallback = vi.fn()
   promise.finally(finallyCallback)
 
   // Promise is still pending.
@@ -11,7 +11,7 @@ it('executes the "finally" block when the promise resolves', async () => {
   promise.resolve()
   expect(finallyCallback).not.toHaveBeenCalled()
 
-  expect(await promise).toBe(undefined)
+  await expect(promise).resolves.toBe(undefined)
   expect(finallyCallback).toHaveBeenCalledTimes(1)
   // "finally" callback does not receive any result.
   expect(finallyCallback).toHaveBeenCalledWith()
@@ -20,7 +20,7 @@ it('executes the "finally" block when the promise resolves', async () => {
 it('executes the "finally" block when the promise rejects', async () => {
   const promise = new DeferredPromise().catch(() => {})
 
-  const finallyCallback = jest.fn()
+  const finallyCallback = vi.fn()
   promise.finally(finallyCallback)
 
   // Promise is still pending.
@@ -28,7 +28,7 @@ it('executes the "finally" block when the promise rejects', async () => {
 
   promise.reject()
 
-  expect(await promise).toBeUndefined()
+  await expect(promise).resolves.toBeUndefined()
   expect(finallyCallback).toHaveBeenCalledTimes(1)
   expect(finallyCallback).toHaveBeenCalledWith()
 })
@@ -36,7 +36,7 @@ it('executes the "finally" block when the promise rejects', async () => {
 it('does not alter resolved data with ".finally()"', async () => {
   const promise = new DeferredPromise<number>()
 
-  const finallyCallback = jest.fn(() => 'unexpected')
+  const finallyCallback = vi.fn(() => 'unexpected')
   const wrapper = (): Promise<number> => {
     // @ts-expect-error (must only return a rejected Promise)
     return promise.finally(finallyCallback)

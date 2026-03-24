@@ -1,4 +1,4 @@
-import { DeferredPromise } from '../../src/DeferredPromise'
+import { DeferredPromise } from '../../src/deferred-promise'
 
 it('respects promise identity with chain transforms', async () => {
   const p1 = new DeferredPromise<number>()
@@ -44,7 +44,7 @@ it('supports a Promise returned from "then"', async () => {
 
   promise.resolve(5)
 
-  expect(await promise).toBe('5')
+  await expect(promise).resolves.toBe('5')
 })
 
 it('supports a DeferredPromise returned from "then"', async () => {
@@ -56,5 +56,5 @@ it('supports a DeferredPromise returned from "then"', async () => {
 
   promise.resolve(5)
 
-  expect(await promise).toBe('5')
+  await expect(promise).resolves.toBe('5')
 })

@@ -1,4 +1,4 @@
-import { DeferredPromise } from '../../src/DeferredPromise'
+import { DeferredPromise } from '../../src/deferred-promise'
 
 it('can be rejected without any reason', async () => {
   const promise = new DeferredPromise<void>()
@@ -40,7 +40,7 @@ it('fulfills the promise with a "catch" block that did not throw', async () => {
   promise.reject(reason)
 
   expect(promise.state).toBe('pending')
-  expect(await promise).toBeUndefined()
+  await expect(promise).resolves.toBeUndefined()
   // The state still remains as rejected.
   expect(promise.state).toBe('fulfilled')
   // But the rejection reason is undefined
