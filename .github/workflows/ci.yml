@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -18,8 +21,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           version: 24
-          always-auth: true
-          registry-url: https://registry.npmjs.org
 
       - name: Setup Git
         run: |
@@ -45,4 +46,3 @@ jobs:
         run: npm run release
         env:
           GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
